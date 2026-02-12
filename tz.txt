@@ -1,0 +1,256 @@
+# tz.md — Phone Shop POS (Buy • Repair • Sell • Debt/Credit)
+
+## 1) Purpose
+Build a POS system for a phone shop that:
+- Buys phones from customers (cheap), optionally repairs them, and sells them (more expensive).
+- Tracks profitability and key financial totals (sold, profit, repair spending, overall earnings).
+- Supports “pay later” (debt) sales to customers and “pay later” purchases from customers (credit owed to customers).
+- Tracks monthly worker payments.
+
+> Note: Existing templates are already available and will be used (no need to describe them here).
+
+---
+
+## 2) Roles
+- **Owner/Admin**: full access, configuration, reports, worker payments.
+- **Manager**: day-to-day operations, purchase/repair/sale, debt/credit handling, view reports.
+- **Cashier/Seller**: create purchases and sales, take payments, view customer balances.
+- **Technician** (optional): repair updates, repair cost entry.
+
+---
+
+## 3) Core Concepts (Definitions)
+- **Purchase (Stock In)**: shop buys a phone from a customer.
+- **Repair**: phone repair actions and costs that increase total cost of the phone.
+- **Sale (Stock Out)**: shop sells a phone to a customer.
+- **Customer Debt**: customer owes shop money (sold on credit / pay later).
+- **Customer Credit**: shop owes customer money (bought phone but did not pay fully / pay later purchase).
+- **Profit**: revenue from sale minus total cost (purchase cost + repair costs + other direct costs if any).
+
+---
+
+## 4) Main Entities & Data Fields
+
+### 4.1 Phone / Inventory Item
+Each phone in stock is tracked as an item.
+- Unique item ID / barcode
+- Brand, model, storage, color (optional but recommended)
+- IMEI / serial (if available)
+- Condition at purchase (e.g., Good / Used / Broken)
+- Known issues (text)
+- Status: `In Stock` | `In Repair` | `Ready for Sale` | `Sold` | `Returned` (optional)
+- Purchase reference (link to purchase)
+- Sale reference (link to sale when sold)
+
+### 4.2 Purchase (Buying from customer)
+- Purchase ID
+- Date/time
+- Seller (customer) details (required if pay-later purchase; optional otherwise)
+- Phone item(s) list (usually 1, but allow multiple)
+- Purchase price (what shop agrees to pay)
+- Payment method: Cash/Card/Other
+- Payment type:
+  - **Paid now** (full paid)
+  - **Pay later** (partial or zero paid now) → creates **Customer Credit**
+- Paid amount now
+- Remaining amount owed to customer (credit balance impact)
+- Notes
+
+### 4.3 Repair
+Repairs are attached to a specific phone item.
+- Repair ID
+- Phone item reference
+- Date/time
+- Repair description
+- Repair cost (money spent)
+- Parts cost (optional breakdown) / labor cost (optional)
+- Who did it (technician)
+- Repair status: pending / done
+- Notes
+
+### 4.4 Sale
+- Sale ID
+- Date/time
+- Customer details (required if pay-later sale; optional otherwise)
+- Phone item(s) list
+- Sale price (per item and total)
+- Payment method: Cash/Card/Other
+- Payment type:
+  - **Paid now** (full)
+  - **Pay later** (partial or zero paid now) → creates **Customer Debt**
+- Paid amount now
+- Remaining amount owed by customer (debt balance impact)
+- Notes
+
+### 4.5 Customer
+Customer is used for both debt and credit tracking.
+- Customer ID
+- Full name
+- Phone number (primary)
+- Optional: address, passport/ID, notes
+- **Balance summary**
+  - Debt to shop (customer owes)
+  - Credit from shop (shop owes)
+- Transaction history (purchases, sales, payments)
+
+### 4.6 Payments (Settlements)
+Payments are used to reduce Debt or Credit.
+- Payment ID
+- Date/time
+- Customer reference
+- Direction:
+  - **Customer pays shop** (reduces Debt)
+  - **Shop pays customer** (reduces Credit)
+- Amount
+- Method (cash/card/other)
+- Related sale/purchase (optional link)
+- Notes
+
+### 4.7 Workers & Monthly Payments
+- Worker ID
+- Name, role
+- Monthly salary amount (fixed)
+- Payment record:
+  - Month (YYYY-MM)
+  - Amount paid
+  - Date/time
+  - Notes
+
+---
+
+## 5) Workflows
+
+### 5.1 Buying a Phone (Stock In)
+1. Create a Purchase.
+2. Enter phone details + condition/issues.
+3. Enter agreed purchase price.
+4. Choose:
+   - Full payment now → inventory added, no customer balance.
+   - Pay later (partial/zero) → customer details required, create **Customer Credit**.
+5. Phone status becomes `In Stock` or `In Repair` (if broken).
+
+### 5.2 Repairing a Phone
+1. Select phone item.
+2. Create Repair record(s) with costs.
+3. When repair finished, mark status `Ready for Sale`.
+4. Repair spending contributes to total cost and profit calculations.
+
+### 5.3 Selling a Phone
+1. Create a Sale.
+2. Select phone item(s) from inventory (`Ready for Sale` / `In Stock`).
+3. Set sale price.
+4. Choose:
+   - Full payment now → phone becomes `Sold`.
+   - Pay later (partial/zero) → customer details required, create **Customer Debt**.
+5. Sale reduces inventory and updates financial totals.
+
+### 5.4 Debt Collection (Customer pays later)
+1. Open customer profile → see current Debt.
+2. Add Payment (Customer pays shop).
+3. Apply to outstanding debts (FIFO by default: oldest first), or allow manual allocation.
+4. Update customer Debt and show remaining.
+
+### 5.5 Paying Customer Credit (Shop pays later)
+1. Open customer profile → see current Credit.
+2. Add Payment (Shop pays customer).
+3. Apply to outstanding credits (FIFO default), or manual allocation.
+4. Update customer Credit and show remaining.
+
+---
+
+## 6) Financial Logic & Calculations
+
+### 6.1 Cost of Phone
+For each phone item:
+- **Total Cost** = Purchase price + Sum(repair costs)
+
+### 6.2 Revenue
+For each sale:
+- **Revenue** = Sale total amount
+
+### 6.3 Profit
+- **Profit per phone** = Revenue (for that phone) − Total Cost (that phone)
+- **Profit for a period** = Sum(profit per sold phone in that period)
+
+### 6.4 Repair Spending
+- Total repair spending for period = Sum(repair costs created in that period)
+- Also track repair spending per phone.
+
+### 6.5 Overall Earnings (High-level)
+System must show:
+- Total sales revenue
+- Total purchase spending (phones bought)
+- Total repair spending
+- Total profit from sold phones
+- Optional: Net cash flow view:
+  - Cash In: customer payments + paid-now sales
+  - Cash Out: paid-now purchases + repair spending + worker salaries + paying customer credits
+
+> Important: Profit and cash flow are different; system should provide both views if possible.
+
+---
+
+## 7) Debt / Credit Rules (Client Requirements)
+
+### 7.1 Pay Later on Sale (Debt)
+- Customer details are **mandatory** if sale is not fully paid.
+- System must show:
+  - Customer’s current debt
+  - List of unpaid/partially paid sales
+  - Payment history
+- Debt can be partially paid or fully paid later.
+
+### 7.2 Pay Later on Purchase (Credit)
+- Customer details are **mandatory** if purchase is not fully paid to the customer.
+- System must show:
+  - Customer’s current credit (shop owes them)
+  - List of unpaid/partially paid purchases
+  - Payment history
+- Credit can be partially paid or fully paid later.
+
+### 7.3 Balance Presentation
+On customer profile:
+- **Debt** (customer → shop)
+- **Credit** (shop → customer)
+- If both exist, show both separately (do not auto-net unless explicitly required later).
+
+---
+
+## 8) Reporting (Minimum)
+System must provide filters by date range (daily/weekly/monthly/custom):
+- Sales report: revenue, number of phones sold, profit, paid vs unpaid amounts
+- Purchases report: total bought amount, count of phones bought, paid vs unpaid amounts
+- Repair report: total repair costs, by technician (if available), by phone
+- Customer balances:
+  - Customers with debt (top list)
+  - Customers with credit (top list)
+- Worker payments report (per month)
+
+---
+
+## 9) Audit & History
+- Every purchase/sale/repair/payment should be timestamped and linked to the user who created it.
+- Do not allow deletion of financial records by default; prefer “void/cancel” with reason (optional but recommended).
+
+---
+
+## 10) Non-Functional Requirements
+- Fast search by customer phone number and by phone IMEI/serial.
+- Simple UI for daily shop operations.
+- Works reliably for day-to-day POS usage.
+- Data integrity: prevent selling an already sold phone; prevent negative remaining balances.
+- Basic access control by roles.
+
+---
+
+## 11) Acceptance Criteria (Checklist)
+- Can buy phones into inventory (paid now or pay later → customer credit).
+- Can record repair actions with costs and affect profit.
+- Can sell phones (paid now or pay later → customer debt).
+- Can record payments to reduce debt or credit and see accurate remaining balance.
+- Can view totals: sold amount, profit, repair spending, overall earnings summaries.
+- Can manage worker monthly salaries and see payment history.
+- Customer profile clearly shows debt/credit and transaction history.
+
+---
+End of tz.md
