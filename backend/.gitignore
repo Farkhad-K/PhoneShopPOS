@@ -58,3 +58,8 @@ report.[0-9]*.[0-9]*.[0-9]*.[0-9]*.json
 
 # Ignore uploads
 /uploads/*
+backend-plan.md
+IMPLEMENTATION_STATUS.md
+WALKTHROUGH_SUMMARY.md
+/.claude/
+.claude/settings.local.json

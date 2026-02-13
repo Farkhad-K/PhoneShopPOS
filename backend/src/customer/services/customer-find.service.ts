@@ -16,7 +16,7 @@ export class CustomerFindService {
   async findAll(
     query: PaginationQueryDto,
   ): Promise<paginationUtil.PaginationResult<CustomerResponseDto>> {
-    const { page = 1, limit = 10, sortBy, sortOrder, search } = query;
+    const { page = 1, take = 10, sortField, sortOrder, search } = query;
 
     const qb = this.customerRepository.createQueryBuilder('customer');
 
@@ -29,20 +29,26 @@ export class CustomerFindService {
     }
 
     // Sorting
-    if (sortBy) {
-      const order = sortOrder?.toUpperCase() === 'DESC' ? 'DESC' : 'ASC';
-      qb.orderBy(`customer.${sortBy}`, order);
+    if (sortField) {
+      const order = sortOrder === 'DESC' ? 'DESC' : 'ASC';
+      qb.orderBy(`customer.${sortField}`, order);
     } else {
       qb.orderBy('customer.createdAt', 'DESC');
     }
 
     // Pagination
-    const skip = (page - 1) * limit;
-    qb.skip(skip).take(limit);
+    const skip = (page - 1) * take;
+    qb.skip(skip).take(take);
 
-    const [items, total] = await qb.getManyAndCount();
+    const [results, count] = await qb.getManyAndCount();
 
-    return paginationUtil.paginateResponse(items, total, page, limit);
+    return {
+      count,
+      results,
+      totalPages: Math.ceil(count / take),
+      page: Number(page),
+      take: Number(take),
+    };
   }
 
   async findOne(id: number): Promise<Customer> {

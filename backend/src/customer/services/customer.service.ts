@@ -47,6 +47,10 @@ export class CustomerService {
   }
 
   async getBalance(customerId: number) {
-    return this.balanceService.calculate(customerId);
+    return this.balanceService.getCustomerBalance(customerId);
+  }
+
+  async getTransactions(customerId: number) {
+    return this.balanceService.getCustomerTransactions(customerId);
   }
 }

@@ -18,13 +18,13 @@ export class AuthSigningService extends AuthBaseService {
     };
 
     const [access_token, refresh_token] = await Promise.all([
-      this.jwt.signAsync(payload, {
+      this.jwt.signAsync(payload as any, {
         secret: this.accessSecret,
-        expiresIn: this.accessExpires,
+        expiresIn: this.accessExpires as any,
       }),
-      this.jwt.signAsync(payload as RefreshPayload, {
+      this.jwt.signAsync(payload as any, {
         secret: this.refreshSecret,
-        expiresIn: this.refreshExpires,
+        expiresIn: this.refreshExpires as any,
       }),
     ]);
 

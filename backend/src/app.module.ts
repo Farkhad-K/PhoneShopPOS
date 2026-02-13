@@ -10,6 +10,14 @@ import { AuthModule } from './auth/auth.module';
 import { JwtRoleGuard } from './auth/guards/jwt-auth.guard';
 import { UserModule } from './user/user.module';
 import { CustomerModule } from './customer/customer.module';
+import { SupplierModule } from './supplier/supplier.module';
+import { PurchaseModule } from './purchase/purchase.module';
+import { RepairModule } from './repair/repair.module';
+import { SaleModule } from './sale/sale.module';
+import { PhoneModule } from './phone/phone.module';
+import { PaymentModule } from './payment/payment.module';
+import { ReportsModule } from './reports/reports.module';
+import { WorkerModule } from './worker/worker.module';
 
 import { ClsUserInterceptor } from './common/interceptors/cls-user.interceptor';
 import { AuditSubscriber } from './common/subscribers/audit.subscriber';
@@ -38,13 +46,21 @@ import { GlobalExceptionFilter } from './common/filters/global-exception.filter'
         autoLoadEntities: true,
         synchronize: false, // Disabled for production - use migrations
         logging: true,
-        migrations: ['dist/migrations/*.js'],
+        migrations: [__dirname + '/migrations/*.{ts,js}'],
         migrationsRun: false, // Run migrations manually
       }),
     }),
     UserModule,
     AuthModule,
     CustomerModule,
+    SupplierModule,
+    PurchaseModule,
+    RepairModule,
+    SaleModule,
+    PhoneModule,
+    PaymentModule,
+    ReportsModule,
+    WorkerModule,
   ],
   controllers: [AppController],
   providers: [
