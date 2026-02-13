@@ -61,8 +61,8 @@ async function bootstrap() {
     }
 
     const config = new DocumentBuilder()
-      .setTitle('Template Backend')
-      .setDescription('Template backend API documentation')
+      .setTitle('Phone Shop API')
+      .setDescription('Phone Shop POS API documentation')
       .setVersion('1.0')
       .addBearerAuth(
         {
