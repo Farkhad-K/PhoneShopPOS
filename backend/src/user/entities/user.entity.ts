@@ -1,5 +1,5 @@
 // entities/user.entity.ts
-import { Extender } from 'src/common/entities/common.entites';
+import { Extender } from 'src/common/entities/common.entities';
 import { Role } from 'src/common/enums/enum';
 import { Column, Entity } from 'typeorm';
 

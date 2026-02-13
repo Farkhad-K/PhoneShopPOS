@@ -24,7 +24,12 @@ async function wipe(): Promise<void> {
       await queryRunner.query('CREATE SCHEMA public;');
 
       console.log('Granting privileges...');
-      await queryRunner.query('GRANT ALL ON SCHEMA public TO postgres;');
+      // Try to grant to postgres role if it exists, otherwise skip
+      try {
+        await queryRunner.query('GRANT ALL ON SCHEMA public TO postgres;');
+      } catch (err) {
+        console.log('  ⚠️ Skipping grant to postgres role (role does not exist)');
+      }
       await queryRunner.query('GRANT ALL ON SCHEMA public TO public;');
 
       console.log('✅ Database schema dropped and recreated successfully.');

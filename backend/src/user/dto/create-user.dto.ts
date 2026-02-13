@@ -23,7 +23,7 @@ export class CreateUserDto {
   })
   password: string;
 
-  @ApiProperty({ enum: Role, example: Role.ADMIN })
-  @IsEnum(Role, { message: 'Rol faqat ADMIN yoki WORKER bo‘lishi mumkin' })
+  @ApiProperty({ enum: Role, example: Role.OWNER })
+  @IsEnum(Role, { message: "Rol OWNER, MANAGER, CASHIER yoki TECHNICIAN bo'lishi mumkin" })
   role: Role;
 }

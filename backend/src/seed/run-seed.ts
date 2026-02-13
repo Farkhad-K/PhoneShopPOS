@@ -59,23 +59,23 @@ async function run() {
       WHERE NOT EXISTS (SELECT 1 FROM "measurement_conversion" WHERE "fromUnit"='LITRE' AND "toUnit"='LITRE');
     `);
 
-    // 3) Users (15 seeded rows per requirement)
+    // 3) Users with new role hierarchy (OWNER > MANAGER > CASHIER > TECHNICIAN)
     const userSeeds: { username: string; password: string; role: Role }[] = [
-      { username: 'admin', password: 'admin123', role: Role.ADMIN },
-      { username: 'worker', password: 'worker123', role: Role.WORKER },
-      { username: 'storekeeper', password: 'storekeeper123', role: Role.WORKER },
-      { username: 'assembler', password: 'assembler123', role: Role.WORKER },
-      { username: 'finance', password: 'finance123', role: Role.WORKER },
-      { username: 'salesrep', password: 'sales123', role: Role.WORKER },
-      { username: 'qa1', password: 'qa123', role: Role.WORKER },
-      { username: 'qa2', password: 'qa123', role: Role.WORKER },
-      { username: 'logistics', password: 'logistics123', role: Role.WORKER },
-      { username: 'planning', password: 'planning123', role: Role.WORKER },
-      { username: 'support', password: 'support123', role: Role.WORKER },
-      { username: 'auditor', password: 'audit123', role: Role.WORKER },
-      { username: 'hr', password: 'hr123', role: Role.WORKER },
-      { username: 'fieldagent', password: 'field123', role: Role.WORKER },
-      { username: 'analyst', password: 'analysis123', role: Role.WORKER },
+      { username: 'owner', password: 'owner123', role: Role.OWNER },
+      { username: 'manager1', password: 'manager123', role: Role.MANAGER },
+      { username: 'manager2', password: 'manager123', role: Role.MANAGER },
+      { username: 'cashier1', password: 'cashier123', role: Role.CASHIER },
+      { username: 'cashier2', password: 'cashier123', role: Role.CASHIER },
+      { username: 'cashier3', password: 'cashier123', role: Role.CASHIER },
+      { username: 'technician1', password: 'tech123', role: Role.TECHNICIAN },
+      { username: 'technician2', password: 'tech123', role: Role.TECHNICIAN },
+      { username: 'technician3', password: 'tech123', role: Role.TECHNICIAN },
+      { username: 'salesperson1', password: 'sales123', role: Role.CASHIER },
+      { username: 'salesperson2', password: 'sales123', role: Role.CASHIER },
+      { username: 'repairman1', password: 'repair123', role: Role.TECHNICIAN },
+      { username: 'repairman2', password: 'repair123', role: Role.TECHNICIAN },
+      { username: 'supervisor', password: 'super123', role: Role.MANAGER },
+      { username: 'assistant', password: 'assist123', role: Role.CASHIER },
     ];
 
     for (const user of userSeeds) {
@@ -94,9 +94,9 @@ async function run() {
       );
     }
 
-    const adminUserId = await selectOneId(
+    const ownerUserId = await selectOneId(
       `SELECT "id" FROM "user" WHERE "username" = $1 LIMIT 1`,
-      ['admin'],
+      ['owner'],
     );
 
     // 4) Clients
@@ -312,7 +312,7 @@ async function run() {
         ("id","amount","from","to","comment","transactionId","isActive","createdAt","updatedAt")
       VALUES (DEFAULT, 10, $1, $2, 'Seed debt for sample sale', $3, true, now(), now());
     `,
-      [client1Id, adminUserId, txId],
+      [client1Id, ownerUserId, txId],
     );
 
     // Partial payment from client
@@ -322,7 +322,7 @@ async function run() {
         ("id","amount","from","to","comment","transactionId","isActive","createdAt","updatedAt")
       VALUES (DEFAULT, 5, $1, $2, 'Partial payment', $3, true, now(), now());
     `,
-      [client1Id, adminUserId, txId],
+      [client1Id, ownerUserId, txId],
     );
 
     // Supplier payable (per your earlier "supplier credit" logic: from = supplierId, to = userId)
@@ -332,7 +332,7 @@ async function run() {
         ("id","amount","from","to","comment","isActive","createdAt","updatedAt")
       VALUES (DEFAULT, 1200000, $1, $2, 'Seed payable to supplier', true, now(), now());
     `,
-      [supp1Id, adminUserId],
+      [supp1Id, ownerUserId],
     );
   });
 

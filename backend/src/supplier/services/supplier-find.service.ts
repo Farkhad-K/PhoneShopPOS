@@ -3,27 +3,27 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, Like } from 'typeorm';
 import { PaginationQueryDto } from 'src/common/dtos/pagination-query.dto';
 import * as paginationUtil from 'src/common/utils/pagination.util';
-import { Customer } from '../entities/customer.entity';
-import { CustomerResponseDto } from '../dto/customer-response.dto';
+import { Supplier } from '../entities/supplier.entity';
+import { SupplierResponseDto } from '../dto/supplier-response.dto';
 
 @Injectable()
-export class CustomerFindService {
+export class SupplierFindService {
   constructor(
-    @InjectRepository(Customer)
-    private readonly customerRepository: Repository<Customer>,
+    @InjectRepository(Supplier)
+    private readonly supplierRepository: Repository<Supplier>,
   ) {}
 
   async findAll(
     query: PaginationQueryDto,
-  ): Promise<paginationUtil.PaginationResult<CustomerResponseDto>> {
+  ): Promise<paginationUtil.PaginationResult<SupplierResponseDto>> {
     const { page = 1, take = 10, sortField, sortOrder, search } = query;
 
-    const qb = this.customerRepository.createQueryBuilder('customer');
+    const qb = this.supplierRepository.createQueryBuilder('supplier');
 
-    // Search by name or phone number
+    // Search by company name or phone number
     if (search) {
       qb.where(
-        '(customer.fullName ILIKE :search OR customer.phoneNumber LIKE :search)',
+        '(supplier.companyName ILIKE :search OR supplier.phoneNumber LIKE :search)',
         { search: `%${search}%` },
       );
     }
@@ -31,9 +31,9 @@ export class CustomerFindService {
     // Sorting
     if (sortField) {
       const order = sortOrder === 'DESC' ? 'DESC' : 'ASC';
-      qb.orderBy(`customer.${sortField}`, order);
+      qb.orderBy(`supplier.${sortField}`, order);
     } else {
-      qb.orderBy('customer.createdAt', 'DESC');
+      qb.orderBy('supplier.createdAt', 'DESC');
     }
 
     // Pagination
@@ -51,26 +51,26 @@ export class CustomerFindService {
     };
   }
 
-  async findOne(id: number): Promise<Customer> {
-    const customer = await this.customerRepository.findOne({
+  async findOne(id: number): Promise<Supplier> {
+    const supplier = await this.supplierRepository.findOne({
       where: { id },
     });
 
-    if (!customer) {
-      throw new NotFoundException(`Customer with ID ${id} not found`);
+    if (!supplier) {
+      throw new NotFoundException(`Supplier with ID ${id} not found`);
     }
 
-    return customer;
+    return supplier;
   }
 
-  async findByPhoneNumber(phoneNumber: string): Promise<Customer | null> {
-    return this.customerRepository.findOne({
+  async findByPhoneNumber(phoneNumber: string): Promise<Supplier | null> {
+    return this.supplierRepository.findOne({
       where: { phoneNumber },
     });
   }
 
-  async searchByPhone(phoneNumber: string): Promise<Customer[]> {
-    return this.customerRepository.find({
+  async searchByPhone(phoneNumber: string): Promise<Supplier[]> {
+    return this.supplierRepository.find({
       where: { phoneNumber: Like(`%${phoneNumber}%`) },
       take: 10,
     });

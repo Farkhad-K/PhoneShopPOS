@@ -1,5 +1,5 @@
 import { Entity, Column, OneToMany } from 'typeorm';
-import { Extender } from 'src/common/entities/common.entites';
+import { Extender } from 'src/common/entities/common.entities';
 
 @Entity({ name: 'customers' })
 export class Customer extends Extender {
