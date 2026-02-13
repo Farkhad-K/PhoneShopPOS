@@ -143,3 +143,10 @@ dist
 vite.config.js.timestamp-*
 vite.config.ts.timestamp-*
 .vite/
+
+/.claude
+COMPLETE_IMPLEMENTATION.md
+FRONTEND_IMPLEMENTATION_GUIDE.md
+IMPLEMENTATION_SUMMARY.md
+QUICK_START.md
+README_IMPLEMENTATION.md
