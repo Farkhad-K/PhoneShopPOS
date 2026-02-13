@@ -92,7 +92,7 @@ export class SupplierController {
 
   @Get(':id/balance')
   @Roles(Role.CASHIER)
-  @ApiOperation({ summary: 'Get supplier payable balance' })
+  @ApiOperation({ summary: 'Get supplier credit balance with unpaid purchases' })
   @ApiParam({ name: 'id', description: 'Supplier ID' })
   @ApiResponse({
     status: 200,
@@ -104,6 +104,19 @@ export class SupplierController {
     @Param('id', ParseIntPipe) id: number,
   ): Promise<SupplierBalanceDto> {
     return this.supplierService.getBalance(id);
+  }
+
+  @Get(':id/transactions')
+  @Roles(Role.MANAGER)
+  @ApiOperation({ summary: 'Get supplier transaction history (all purchases)' })
+  @ApiParam({ name: 'id', description: 'Supplier ID' })
+  @ApiResponse({
+    status: 200,
+    description: 'Supplier transaction history',
+  })
+  @ApiResponse({ status: 404, description: 'Supplier not found' })
+  async getTransactions(@Param('id', ParseIntPipe) id: number) {
+    return this.supplierService.getTransactions(id);
   }
 
   @Patch(':id')

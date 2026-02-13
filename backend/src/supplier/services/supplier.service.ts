@@ -46,6 +46,10 @@ export class SupplierService {
   }
 
   getBalance(id: number) {
-    return this.balanceService.getBalance(id);
+    return this.balanceService.getSupplierBalance(id);
+  }
+
+  getTransactions(id: number) {
+    return this.balanceService.getSupplierTransactions(id);
   }
 }

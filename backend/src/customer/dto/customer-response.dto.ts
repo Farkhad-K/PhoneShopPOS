@@ -33,12 +33,32 @@ export class CustomerBalanceDto {
   @ApiProperty({ example: 'John Doe' })
   customerName: string;
 
-  @ApiProperty({ example: 500.0, description: 'Total debt (unpaid sales)' })
+  @ApiProperty({ example: 550.0, description: 'Total debt from all unpaid/partial sales' })
   totalDebt: number;
 
-  @ApiProperty({ example: 200.0, description: 'Total credit (unpaid purchases)' })
-  totalCredit: number;
-
-  @ApiProperty({ example: 300.0, description: 'Net balance (debt - credit)' })
-  netBalance: number;
+  @ApiProperty({
+    description: 'List of unpaid and partially paid sales',
+    example: [{
+      id: 2,
+      salePrice: 1350,
+      paidAmount: 800,
+      remainingBalance: 550,
+      saleDate: '2026-02-12T21:56:22.911Z',
+      phone: {
+        brand: 'Apple',
+        model: 'iPhone 14 Pro Max'
+      }
+    }]
+  })
+  unpaidSales: {
+    id: number;
+    salePrice: number;
+    paidAmount: number;
+    remainingBalance: number;
+    saleDate: Date;
+    phone: {
+      brand: string;
+      model: string;
+    };
+  }[];
 }

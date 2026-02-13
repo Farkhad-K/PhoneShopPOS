@@ -127,6 +127,18 @@ export class PhoneService {
   async update(id: number, updatePhoneDto: UpdatePhoneDto): Promise<Phone> {
     const phone = await this.findOne(id);
 
+    // Validate IMEI uniqueness if IMEI is being updated
+    if (updatePhoneDto.imei && updatePhoneDto.imei !== phone.imei) {
+      const existingPhone = await this.phoneRepository.findOne({
+        where: { imei: updatePhoneDto.imei },
+      });
+      if (existingPhone) {
+        throw new BadRequestException(
+          `Phone with IMEI ${updatePhoneDto.imei} already exists`,
+        );
+      }
+    }
+
     // Validate status changes
     if (updatePhoneDto.status) {
       // Cannot change status of sold phone (except to return)
@@ -147,6 +159,34 @@ export class PhoneService {
 
     Object.assign(phone, updatePhoneDto);
     return await this.phoneRepository.save(phone);
+  }
+
+  async delete(id: number): Promise<void> {
+    const phone = await this.phoneRepository.findOne({
+      where: { id },
+      relations: ['repairs', 'sale'],
+    });
+
+    if (!phone) {
+      throw new NotFoundException(`Phone with ID ${id} not found`);
+    }
+
+    // Prevent deletion if phone has repairs
+    if (phone.repairs && phone.repairs.length > 0) {
+      throw new BadRequestException(
+        `Cannot delete phone with ID ${id}. It has ${phone.repairs.length} repair record(s). Please delete repairs first or use soft delete.`,
+      );
+    }
+
+    // Prevent deletion if phone has been sold
+    if (phone.sale) {
+      throw new BadRequestException(
+        `Cannot delete phone with ID ${id}. It has been sold (Sale ID: ${phone.sale.id}). Use soft delete instead.`,
+      );
+    }
+
+    // Soft delete
+    await this.phoneRepository.softDelete(id);
   }
 
   async getPhoneHistory(id: number) {

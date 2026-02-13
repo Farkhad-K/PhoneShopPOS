@@ -18,9 +18,9 @@ import {
 } from '@nestjs/swagger';
 import { Roles } from 'src/auth/decorators/roles.decorator';
 import { Role } from 'src/common/enums/enum';
-import { PaginationQueryDto } from 'src/common/dtos/pagination-query.dto';
 import { CreatePurchaseDto } from './dto/create-purchase.dto';
 import { UpdatePurchaseDto } from './dto/update-purchase.dto';
+import { PurchaseFilterDto } from './dto/purchase-filter.dto';
 import { PurchaseResponseDto } from './dto/purchase-response.dto';
 import { PurchaseService } from './services/purchase.service';
 
@@ -44,13 +44,18 @@ export class PurchaseController {
 
   @Get()
   @Roles(Role.CASHIER) // CASHIER and above can view purchases
-  @ApiOperation({ summary: 'Get all purchases with pagination' })
+  @ApiOperation({
+    summary: 'Get all purchases with advanced filtering',
+    description:
+      'Filter by date range, supplier, payment status, amount range. ' +
+      'Search by supplier name or notes.',
+  })
   @ApiResponse({
     status: 200,
-    description: 'List of purchases',
+    description: 'Paginated list of purchases with metadata',
   })
-  async findAll(@Query() query: PaginationQueryDto) {
-    return this.purchaseService.findAll(query);
+  async findAll(@Query() filter: PurchaseFilterDto) {
+    return this.purchaseService.findAll(filter);
   }
 
   @Get(':id')

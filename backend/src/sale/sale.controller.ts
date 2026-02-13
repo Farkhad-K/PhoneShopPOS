@@ -18,9 +18,9 @@ import {
 } from '@nestjs/swagger';
 import { Roles } from 'src/auth/decorators/roles.decorator';
 import { Role } from 'src/common/enums/enum';
-import { PaginationQueryDto } from 'src/common/dtos/pagination-query.dto';
 import { CreateSaleDto } from './dto/create-sale.dto';
 import { UpdateSaleDto } from './dto/update-sale.dto';
+import { SaleFilterDto } from './dto/sale-filter.dto';
 import { SaleResponseDto } from './dto/sale-response.dto';
 import { SaleService } from './services/sale.service';
 
@@ -50,13 +50,18 @@ export class SaleController {
 
   @Get()
   @Roles(Role.CASHIER) // CASHIER and above can view sales
-  @ApiOperation({ summary: 'Get all sales with pagination' })
+  @ApiOperation({
+    summary: 'Get all sales with advanced filtering',
+    description:
+      'Filter by date range, customer, payment type, payment status, price range. ' +
+      'Search by phone brand/model or customer name.',
+  })
   @ApiResponse({
     status: 200,
-    description: 'List of sales with phone and customer details',
+    description: 'Paginated list of sales with metadata',
   })
-  async findAll(@Query() query: PaginationQueryDto) {
-    return this.saleService.findAll(query);
+  async findAll(@Query() filter: SaleFilterDto) {
+    return this.saleService.findAll(filter);
   }
 
   @Get('customer/:customerId')

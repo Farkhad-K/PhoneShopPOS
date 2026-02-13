@@ -24,6 +24,15 @@ export class UpdatePhoneDto {
   condition?: PhoneCondition;
 
   @ApiProperty({
+    example: '123456789012345',
+    description: 'Update phone IMEI number',
+    required: false,
+  })
+  @IsString()
+  @IsOptional()
+  imei?: string;
+
+  @ApiProperty({
     example: 'Updated notes about phone condition',
     description: 'Update notes',
     required: false,

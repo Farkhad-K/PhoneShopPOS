@@ -6,9 +6,10 @@ import { Phone } from 'src/phone/entities/phone.entity';
 import { Supplier } from 'src/supplier/entities/supplier.entity';
 import { CreatePurchaseDto } from '../dto/create-purchase.dto';
 import { UpdatePurchaseDto } from '../dto/update-purchase.dto';
-import { PaginationQueryDto } from 'src/common/dtos/pagination-query.dto';
+import { PurchaseFilterDto } from '../dto/purchase-filter.dto';
 import { generatePhoneBarcode } from 'src/common/utils/barcode-generator.util';
 import { PaymentStatus } from 'src/common/enums/enum';
+import { Between, LessThanOrEqual, MoreThanOrEqual } from 'typeorm';
 
 @Injectable()
 export class PurchaseService {
@@ -98,20 +99,69 @@ export class PurchaseService {
     });
   }
 
-  async findAll(query: PaginationQueryDto) {
-    const { page = 1, take = 10, sortField, sortOrder, search } = query;
+  async findAll(filter: PurchaseFilterDto) {
+    const {
+      page = 1,
+      take = 10,
+      sortField,
+      sortOrder,
+      search,
+      supplierId,
+      paymentStatus,
+      startDate,
+      endDate,
+      minAmount,
+      maxAmount,
+    } = filter;
 
     const qb = this.purchaseRepository
       .createQueryBuilder('purchase')
       .leftJoinAndSelect('purchase.supplier', 'supplier')
       .leftJoinAndSelect('purchase.phones', 'phones');
 
+    // Search filter
     if (search) {
-      qb.where('supplier.companyName ILIKE :search', {
-        search: `%${search}%`,
+      qb.andWhere(
+        '(supplier.companyName ILIKE :search OR purchase.notes ILIKE :search)',
+        { search: `%${search}%` },
+      );
+    }
+
+    // Supplier filter
+    if (supplierId) {
+      qb.andWhere('purchase.supplierId = :supplierId', { supplierId });
+    }
+
+    // Payment status filter
+    if (paymentStatus) {
+      qb.andWhere('purchase.paymentStatus = :paymentStatus', { paymentStatus });
+    }
+
+    // Date range filter
+    if (startDate && endDate) {
+      qb.andWhere('purchase.purchaseDate BETWEEN :startDate AND :endDate', {
+        startDate: new Date(startDate),
+        endDate: new Date(endDate + 'T23:59:59.999Z'),
+      });
+    } else if (startDate) {
+      qb.andWhere('purchase.purchaseDate >= :startDate', {
+        startDate: new Date(startDate),
+      });
+    } else if (endDate) {
+      qb.andWhere('purchase.purchaseDate <= :endDate', {
+        endDate: new Date(endDate + 'T23:59:59.999Z'),
       });
     }
 
+    // Amount range filter
+    if (minAmount !== undefined) {
+      qb.andWhere('purchase.totalAmount >= :minAmount', { minAmount });
+    }
+    if (maxAmount !== undefined) {
+      qb.andWhere('purchase.totalAmount <= :maxAmount', { maxAmount });
+    }
+
+    // Sorting
     if (sortField) {
       const order = sortOrder === 'DESC' ? 'DESC' : 'ASC';
       qb.orderBy(`purchase.${sortField}`, order);
@@ -119,17 +169,22 @@ export class PurchaseService {
       qb.orderBy('purchase.purchaseDate', 'DESC');
     }
 
+    // Pagination
     const skip = (page - 1) * take;
     qb.skip(skip).take(take);
 
     const [results, count] = await qb.getManyAndCount();
 
     return {
-      count,
-      results,
-      totalPages: Math.ceil(count / take),
-      page: Number(page),
-      take: Number(take),
+      data: results,
+      meta: {
+        page: Number(page),
+        take: Number(take),
+        totalItems: count,
+        totalPages: Math.ceil(count / take),
+        hasPreviousPage: page > 1,
+        hasNextPage: page < Math.ceil(count / take),
+      },
     };
   }
 

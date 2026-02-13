@@ -37,23 +37,28 @@ export class SupplierBalanceDto {
   supplierId: number;
 
   @ApiProperty({ example: 'TechnoMart LLC' })
-  companyName: string;
+  supplierName: string;
+
+  @ApiProperty({ example: 800.0, description: 'Total credit owed to supplier (unpaid purchases)' })
+  totalCredit: number;
 
   @ApiProperty({
-    example: 50000,
-    description: 'Total amount shop owes to supplier (payables)',
+    description: 'List of unpaid and partially paid purchases',
+    example: [{
+      id: 2,
+      totalAmount: 2800,
+      paidAmount: 2000,
+      remainingBalance: 800,
+      purchaseDate: '2026-02-09T09:56:22.911Z',
+      notes: 'Samsung bulk order'
+    }]
   })
-  totalPayable: number;
-
-  @ApiProperty({
-    example: 20000,
-    description: 'Amount already paid to supplier',
-  })
-  totalPaid: number;
-
-  @ApiProperty({
-    example: 30000,
-    description: 'Remaining balance shop owes',
-  })
-  remainingBalance: number;
+  unpaidPurchases: {
+    id: number;
+    totalAmount: number;
+    paidAmount: number;
+    remainingBalance: number;
+    purchaseDate: Date;
+    notes: string;
+  }[];
 }

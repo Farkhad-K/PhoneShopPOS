@@ -4,8 +4,10 @@ import {
   Param,
   ParseIntPipe,
   Patch,
+  Delete,
   Body,
   Query,
+  HttpCode,
 } from '@nestjs/common';
 import {
   ApiTags,
@@ -173,5 +175,26 @@ export class PhoneController {
     @Body() updatePhoneDto: UpdatePhoneDto,
   ) {
     return this.phoneService.update(id, updatePhoneDto);
+  }
+
+  @Delete(':id')
+  @Roles(Role.OWNER) // Only OWNER can delete phones
+  @ApiOperation({
+    summary: 'Delete phone (soft delete)',
+    description:
+      'Soft deletes a phone. Cannot delete phones with repairs or sales.',
+  })
+  @ApiParam({ name: 'id', description: 'Phone ID' })
+  @ApiResponse({
+    status: 204,
+    description: 'Phone deleted successfully',
+  })
+  @ApiResponse({
+    status: 400,
+    description: 'Cannot delete phone with repairs or sales',
+  })
+  @HttpCode(204)
+  async delete(@Param('id', ParseIntPipe) id: number) {
+    return this.phoneService.delete(id);
   }
 }

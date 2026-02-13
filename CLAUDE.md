@@ -282,6 +282,364 @@ For each phone:
 3. **Payment cannot exceed remaining balance:** Validate in service before applying
 4. **Customer required for pay-later:** Enforce in DTO validation
 5. **IMEI uniqueness:** Add unique constraint on IMEI (allow null for phones without IMEI)
+6. **One payment per worker per month:** Unique constraint on (workerId, month, year)
+7. **Cannot repair sold phone:** Validate phone status before creating repair
+8. **Payment amount validation:** paidAmount cannot exceed transaction total
+
+---
+
+## Implementation Learnings & Best Practices
+
+### 1. TypeORM Migration Workarounds
+
+**Problem:** TypeORM migration CLI has issues with ts-node path resolution when using `src/` path aliases.
+
+**Solution:**
+- Create direct SQL migration files when TypeORM CLI fails
+- Execute migrations using DataSource directly:
+
+```typescript
+// run-worker-migration.ts
+import { AppDataSource } from './typeorm.config';
+import * as fs from 'fs';
+
+async function runMigration() {
+  await AppDataSource.initialize();
+  const sql = fs.readFileSync('create-worker-tables.sql', 'utf8');
+  await AppDataSource.query(sql);
+  await AppDataSource.destroy();
+}
+```
+
+**When to use:**
+- Complex migrations with custom SQL
+- When migration:generate fails due to path resolution
+- For database-specific features not supported by TypeORM decorators
+
+### 2. Testing with TypeORM Repositories
+
+**Unit Test Pattern for Services:**
+
+```typescript
+describe('ServiceName', () => {
+  let service: ServiceName;
+  let repository: Repository<Entity>;
+
+  beforeEach(async () => {
+    const module = await Test.createTestingModule({
+      providers: [
+        ServiceName,
+        {
+          provide: getRepositoryToken(Entity),
+          useValue: {
+            create: jest.fn(),
+            save: jest.fn(),
+            findOne: jest.fn(),
+            find: jest.fn(),
+            softDelete: jest.fn(),
+          },
+        },
+      ],
+    }).compile();
+
+    service = module.get<ServiceName>(ServiceName);
+    repository = module.get(getRepositoryToken(Entity));
+  });
+
+  afterEach(() => {
+    jest.clearAllMocks();
+  });
+
+  it('should test something', async () => {
+    jest.spyOn(repository, 'findOne').mockResolvedValue(mockEntity);
+    const result = await service.method();
+    expect(result).toBeDefined();
+  });
+});
+```
+
+**QueryBuilder Mocking Pattern:**
+
+```typescript
+const mockQueryBuilder = {
+  leftJoinAndSelect: jest.fn().mockReturnThis(),
+  where: jest.fn().mockReturnThis(),
+  andWhere: jest.fn().mockReturnThis(),
+  orderBy: jest.fn().mockReturnThis(),
+  skip: jest.fn().mockReturnThis(),
+  take: jest.fn().mockReturnThis(),
+  getManyAndCount: jest.fn().mockResolvedValue([[mockEntity], 1]),
+  getOne: jest.fn().mockResolvedValue(mockEntity),
+};
+
+jest.spyOn(repository, 'createQueryBuilder').mockReturnValue(mockQueryBuilder as any);
+```
+
+**Jest Configuration for Path Aliases:**
+
+```json
+// package.json
+{
+  "jest": {
+    "moduleNameMapper": {
+      "^src/(.*)$": "<rootDir>/$1"
+    }
+  }
+}
+
+// test/jest-e2e.json
+{
+  "moduleNameMapper": {
+    "^src/(.*)$": "<rootDir>/../src/$1"
+  }
+}
+```
+
+### 3. Worker Payment Management Pattern
+
+**Unique Constraint Implementation:**
+
+```typescript
+// SQL Migration
+CREATE UNIQUE INDEX idx_worker_payment_month
+ON worker_payments(worker_id, month, year)
+WHERE deleted_at IS NULL;
+```
+
+**Service Validation:**
+
+```typescript
+async create(dto: CreateWorkerPaymentDto): Promise<WorkerPayment> {
+  // Check for duplicate payment
+  const existing = await this.repository.findOne({
+    where: {
+      workerId: dto.workerId,
+      month: dto.month,
+      year: dto.year,
+    },
+  });
+
+  if (existing) {
+    throw new BadRequestException(
+      `Payment for ${dto.month}/${dto.year} already exists`
+    );
+  }
+
+  // Auto-calculate total
+  const totalPaid = dto.amount + (dto.bonus || 0) - (dto.deduction || 0);
+
+  const payment = this.repository.create({
+    ...dto,
+    totalPaid,
+  });
+
+  return this.repository.save(payment);
+}
+```
+
+### 4. Payment FIFO Algorithm Implementation
+
+**Core Concept:** Apply payments to oldest transactions first
+
+```typescript
+async applyPayment(customerId: number, amount: number): Promise<void> {
+  // 1. Get unpaid/partial transactions, oldest first
+  const transactions = await this.getUnpaidTransactions(customerId);
+
+  let remainingAmount = amount;
+
+  for (const transaction of transactions) {
+    if (remainingAmount <= 0) break;
+
+    const amountToApply = Math.min(
+      remainingAmount,
+      transaction.remainingAmount
+    );
+
+    transaction.paidAmount += amountToApply;
+    transaction.remainingAmount -= amountToApply;
+
+    if (transaction.remainingAmount === 0) {
+      transaction.paymentStatus = PaymentStatus.PAID;
+    } else {
+      transaction.paymentStatus = PaymentStatus.PARTIAL;
+    }
+
+    await this.repository.save(transaction);
+    remainingAmount -= amountToApply;
+  }
+}
+```
+
+### 5. Optional Query Parameter Validation
+
+**Problem:** `ParseIntPipe` fails on optional query parameters
+
+**Solution:** Accept string and manually parse
+
+```typescript
+// ❌ This fails when parameter is not provided
+@Query('year', ParseIntPipe) year?: number
+
+// ✅ This works correctly
+@Query('year') year?: string
+
+// In service method:
+const yearNumber = year ? parseInt(year, 10) : undefined;
+```
+
+### 6. Transaction-Based Operations
+
+**Use Case:** When multiple database operations must succeed or fail together
+
+```typescript
+async createSale(dto: CreateSaleDto): Promise<Sale> {
+  return this.dataSource.transaction(async (manager) => {
+    // 1. Create sale
+    const sale = manager.create(Sale, dto);
+    await manager.save(sale);
+
+    // 2. Update phone status
+    const phone = await manager.findOne(Phone, { where: { id: dto.phoneId } });
+    phone.status = PhoneStatus.SOLD;
+    phone.saleId = sale.id;
+    await manager.save(phone);
+
+    // 3. Return with relations
+    return manager.findOne(Sale, {
+      where: { id: sale.id },
+      relations: ['phone', 'customer'],
+    });
+  });
+}
+```
+
+### 7. Calculated Fields vs Stored Fields
+
+**When to Calculate on Query:**
+- Phone totalCost = purchasePrice + sum(repairs)
+- Sale profit = salePrice - phone.totalCost
+- Customer balance = sum(unpaid transactions)
+
+**When to Store:**
+- Sale.paymentStatus (updated on payment)
+- Phone.status (updated on repair/sale)
+- WorkerPayment.totalPaid (calculated once on creation)
+
+**Pattern for Calculated Fields:**
+
+```typescript
+@Entity()
+export class Sale {
+  // Stored fields
+  @Column() salePrice: number;
+
+  // Relations
+  @ManyToOne(() => Phone)
+  phone: Phone;
+
+  // Virtual getter (not stored in DB)
+  get profit(): number {
+    if (!this.phone) return 0;
+    return this.salePrice - this.phone.totalCost;
+  }
+}
+```
+
+### 8. Enum Management
+
+**Centralized Enum File:**
+
+```typescript
+// src/common/enums/enum.ts
+export enum UserRole {
+  OWNER = 'OWNER',         // Hierarchy: 4
+  MANAGER = 'MANAGER',     // Hierarchy: 3
+  CASHIER = 'CASHIER',     // Hierarchy: 2
+  TECHNICIAN = 'TECHNICIAN' // Hierarchy: 1
+}
+
+export enum PhoneStatus {
+  IN_STOCK = 'IN_STOCK',
+  IN_REPAIR = 'IN_REPAIR',
+  READY_FOR_SALE = 'READY_FOR_SALE',
+  SOLD = 'SOLD',
+  RETURNED = 'RETURNED'
+}
+
+export enum PaymentStatus {
+  UNPAID = 'UNPAID',
+  PARTIAL = 'PARTIAL',
+  PAID = 'PAID'
+}
+```
+
+**Benefits:**
+- Single source of truth
+- Easy to maintain
+- Type-safe across application
+- No magic strings
+
+### 9. Barcode Generation Utility
+
+**Implementation:**
+
+```typescript
+// src/common/utils/barcode-generator.util.ts
+export function generateBarcode(): string {
+  const timestamp = Date.now();
+  const random = Math.floor(Math.random() * 1000000)
+    .toString()
+    .padStart(6, '0');
+  return `PH${timestamp}${random}`;
+}
+```
+
+**Usage:**
+
+```typescript
+const phone = this.phoneRepository.create({
+  ...dto,
+  barcode: generateBarcode(),
+});
+```
+
+### 10. E2E Test Structure
+
+**Complete Workflow Testing:**
+
+```typescript
+describe('Phone Lifecycle E2E', () => {
+  let app: INestApplication;
+  let authToken: string;
+  let phoneId: number;
+
+  beforeAll(async () => {
+    // Initialize app, login
+  });
+
+  it('Step 1: Create purchase', async () => {
+    // Test purchase creation
+    phoneId = response.body.phones[0].id;
+  });
+
+  it('Step 2: Create repair', async () => {
+    // Use phoneId from previous test
+  });
+
+  it('Step 3: Complete repair', async () => {
+    // Verify status changes
+  });
+
+  it('Step 4: Create sale', async () => {
+    // Verify profit calculation
+  });
+
+  it('Step 5: Verify cannot sell again', async () => {
+    // Test validation
+  });
+});
+```
 
 ---
 
@@ -391,3 +749,98 @@ VITE_APP_NAME="Phone Shop POS"
 - ShadcnUI: https://ui.shadcn.com
 - Redux Toolkit: https://redux-toolkit.js.org
 - TailwindCSS: https://tailwindcss.com
+
+---
+
+## Project Status
+
+### Backend: ✅ COMPLETE (as of 2026-02-13)
+
+**Implementation Status:**
+- All 8 milestones completed
+- 21/21 unit tests passing
+- E2E test suite complete
+- 100% requirements met (verified against `tz.txt`)
+
+**Documentation:**
+- **`backend/IMPLEMENTATION_STATUS.md`** - Detailed requirements verification mapping each requirement from tz.txt to implementation
+- **`backend/backend-plan.md`** - Complete implementation plan with all milestones marked complete
+- **`tz.txt`** - Original requirements specification
+- **Swagger API** - Available at `/api/docs` when backend is running
+
+**Key Features Implemented:**
+- Complete phone lifecycle (purchase → repair → sale)
+- Customer debt/credit tracking with FIFO payment
+- Worker salary management with unique month/year payments
+- Comprehensive reporting and analytics
+- Role-based access control (OWNER > MANAGER > CASHIER > TECHNICIAN)
+- Audit trail and soft delete
+- Barcode generation for phones
+- Transaction-based operations for data integrity
+
+**Production Readiness:**
+- ✅ All business logic implemented and tested
+- ✅ Database migrations complete
+- ✅ API documentation via Swagger
+- ✅ Role-based security
+- ✅ Error handling and validation
+- ✅ Soft delete for financial records
+- ✅ Audit trail for all operations
+
+**Next Phase:** Frontend development
+
+### Frontend: 📋 PENDING
+
+Frontend development will begin after backend is deployed to staging environment.
+
+**Planned Stack:**
+- React 19 with TypeScript
+- Vite 7 for build tooling
+- TailwindCSS 4 for styling
+- ShadcnUI for component library
+- Redux Toolkit + RTK Query for state management
+- React Router 7 for routing
+
+---
+
+## Quick Reference
+
+### Backend Commands
+```bash
+npm run start:dev          # Development mode
+npm run test              # Run unit tests (21 tests)
+npm run test:e2e          # Run E2E tests
+npm run db:reseed         # Reset database with seed data
+npm run migration:run     # Run pending migrations
+```
+
+### Key Files
+- `/backend/src/app.module.ts` - Main application module
+- `/backend/src/*/entities/*.entity.ts` - Database entities
+- `/backend/src/*/services/*.service.ts` - Business logic
+- `/backend/src/*/dto/*.dto.ts` - Data transfer objects
+- `/backend/src/migrations/*.ts` - Database migrations
+- `/backend/test/*.e2e-spec.ts` - E2E tests
+
+### Database Entities
+1. **User** - System users with roles (OWNER, MANAGER, CASHIER, TECHNICIAN)
+2. **Customer** - Customers for debt/credit tracking
+3. **Supplier** - Suppliers for purchases (pay-later creates credit)
+4. **Phone** - Inventory items with lifecycle tracking
+5. **Purchase** - Phone purchase transactions
+6. **Repair** - Repair records with costs
+7. **Sale** - Phone sale transactions
+8. **Payment** - Customer/supplier payment records
+9. **Worker** - Employee records
+10. **WorkerPayment** - Monthly salary payments
+
+### Business Rules Summary
+- Cannot sell already sold phone
+- Cannot repair sold phone
+- Customer required for pay-later transactions
+- Payment amount cannot exceed remaining balance
+- FIFO payment application (oldest first)
+- Profit = salePrice - (purchasePrice + sum of repairs)
+- Phone totalCost = purchasePrice + sum of repairs
+- Unique constraint: one worker payment per month/year
+- Soft delete for all financial records

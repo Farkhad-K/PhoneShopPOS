@@ -94,7 +94,7 @@ export class CustomerController {
 
   @Get(':id/balance')
   @Roles(Role.CASHIER)
-  @ApiOperation({ summary: 'Get customer debt/credit balance' })
+  @ApiOperation({ summary: 'Get customer debt balance with unpaid sales' })
   @ApiParam({ name: 'id', description: 'Customer ID' })
   @ApiResponse({
     status: 200,
@@ -106,6 +106,19 @@ export class CustomerController {
     @Param('id', ParseIntPipe) id: number,
   ): Promise<CustomerBalanceDto> {
     return this.customerService.getBalance(id);
+  }
+
+  @Get(':id/transactions')
+  @Roles(Role.CASHIER)
+  @ApiOperation({ summary: 'Get customer transaction history (all sales)' })
+  @ApiParam({ name: 'id', description: 'Customer ID' })
+  @ApiResponse({
+    status: 200,
+    description: 'Customer transaction history',
+  })
+  @ApiResponse({ status: 404, description: 'Customer not found' })
+  async getTransactions(@Param('id', ParseIntPipe) id: number) {
+    return this.customerService.getTransactions(id);
   }
 
   @Patch(':id')

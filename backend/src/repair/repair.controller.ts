@@ -18,9 +18,9 @@ import {
 } from '@nestjs/swagger';
 import { Roles } from 'src/auth/decorators/roles.decorator';
 import { Role } from 'src/common/enums/enum';
-import { PaginationQueryDto } from 'src/common/dtos/pagination-query.dto';
 import { CreateRepairDto } from './dto/create-repair.dto';
 import { UpdateRepairDto } from './dto/update-repair.dto';
+import { RepairFilterDto } from './dto/repair-filter.dto';
 import { RepairResponseDto } from './dto/repair-response.dto';
 import { RepairService } from './services/repair.service';
 
@@ -44,13 +44,18 @@ export class RepairController {
 
   @Get()
   @Roles(Role.TECHNICIAN) // TECHNICIAN and above can view repairs
-  @ApiOperation({ summary: 'Get all repairs with pagination' })
+  @ApiOperation({
+    summary: 'Get all repairs with advanced filtering',
+    description:
+      'Filter by date range, phone, status, cost range. ' +
+      'Search by phone brand/model or repair description.',
+  })
   @ApiResponse({
     status: 200,
-    description: 'List of repairs',
+    description: 'Paginated list of repairs with metadata',
   })
-  async findAll(@Query() query: PaginationQueryDto) {
-    return this.repairService.findAll(query);
+  async findAll(@Query() filter: RepairFilterDto) {
+    return this.repairService.findAll(filter);
   }
 
   @Get('phone/:phoneId')

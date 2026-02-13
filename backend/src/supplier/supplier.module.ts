@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { Supplier } from './entities/supplier.entity';
+import { Purchase } from 'src/purchase/entities/purchase.entity';
 import { SupplierController } from './supplier.controller';
 import { SupplierService } from './services/supplier.service';
 import { SupplierCreateService } from './services/supplier-create.service';
@@ -10,7 +11,7 @@ import { SupplierDeleteService } from './services/supplier-delete.service';
 import { SupplierBalanceService } from './services/supplier-balance.service';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([Supplier])],
+  imports: [TypeOrmModule.forFeature([Supplier, Purchase])],
   controllers: [SupplierController],
   providers: [
     SupplierService,

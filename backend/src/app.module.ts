@@ -15,6 +15,9 @@ import { PurchaseModule } from './purchase/purchase.module';
 import { RepairModule } from './repair/repair.module';
 import { SaleModule } from './sale/sale.module';
 import { PhoneModule } from './phone/phone.module';
+import { PaymentModule } from './payment/payment.module';
+import { ReportsModule } from './reports/reports.module';
+import { WorkerModule } from './worker/worker.module';
 
 import { ClsUserInterceptor } from './common/interceptors/cls-user.interceptor';
 import { AuditSubscriber } from './common/subscribers/audit.subscriber';
@@ -55,6 +58,9 @@ import { GlobalExceptionFilter } from './common/filters/global-exception.filter'
     RepairModule,
     SaleModule,
     PhoneModule,
+    PaymentModule,
+    ReportsModule,
+    WorkerModule,
   ],
   controllers: [AppController],
   providers: [

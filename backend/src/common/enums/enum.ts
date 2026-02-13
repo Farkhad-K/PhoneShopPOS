@@ -55,3 +55,10 @@ export enum PaymentType {
   CASH = 'CASH',           // Full payment upfront
   PAY_LATER = 'PAY_LATER', // Customer debt (partial or full)
 }
+
+export enum PaymentMethod {
+  CASH = 'CASH',
+  BANK_TRANSFER = 'BANK_TRANSFER',
+  CARD = 'CARD',
+  MOBILE_PAYMENT = 'MOBILE_PAYMENT',
+}
