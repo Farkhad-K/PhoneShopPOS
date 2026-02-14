@@ -1,4 +1,4 @@
-import { BaseLayout } from '@/components/layouts/base-layout'
+import { PageHeader } from '@/components/shared/page-header'
 import { DataTable } from '@/components/shared/data-table'
 import { StatusBadge } from '@/components/shared/status-badge'
 import { MetricCard } from '@/components/shared/metric-card'
@@ -144,19 +144,18 @@ export default function SalesListPage() {
 
   if (isLoading) {
     return (
-      <BaseLayout title="Sales" description="Manage phone sales">
+      <>
+        <PageHeader title="Sales" description="Manage phone sales" />
         <div className="flex items-center justify-center h-96">
           <LoadingSpinner />
         </div>
-      </BaseLayout>
+      </>
     )
   }
 
   return (
-    <BaseLayout
-      title="Sales"
-      description={`Total: ${data?.meta.total || 0} sales`}
-    >
+    <>
+      <PageHeader title="Sales" description={`Total: ${data?.meta?.total || 0} sales`} />
       <div className="space-y-6 p-6">
         <div className="grid gap-4 md:grid-cols-3">
           <MetricCard
@@ -257,6 +256,6 @@ export default function SalesListPage() {
           onRowClick={(sale) => navigate(`/sales/${sale.id}`)}
         />
       </div>
-    </BaseLayout>
+    </>
   )
 }

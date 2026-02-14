@@ -1,4 +1,4 @@
-import { BaseLayout } from '@/components/layouts/base-layout'
+import { PageHeader } from '@/components/shared/page-header'
 import { DataTable } from '@/components/shared/data-table'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -75,19 +75,18 @@ export default function CustomersListPage() {
 
   if (isLoading) {
     return (
-      <BaseLayout title="Customers" description="Manage customers">
+      <>
+        <PageHeader title="Customers" description="Manage customers" />
         <div className="flex items-center justify-center h-96">
           <LoadingSpinner />
         </div>
-      </BaseLayout>
+      </>
     )
   }
 
   return (
-    <BaseLayout
-      title="Customers"
-      description={`Total: ${customers.length} customers`}
-    >
+    <>
+      <PageHeader title="Customers" description={`Total: ${customers.length} customers`} />
       <div className="space-y-4 p-6">
         <div className="flex gap-4 justify-between items-center">
           <div className="relative flex-1 max-w-sm">
@@ -111,6 +110,6 @@ export default function CustomersListPage() {
           onRowClick={(customer) => navigate(`/customers/${customer.id}`)}
         />
       </div>
-    </BaseLayout>
+    </>
   )
 }

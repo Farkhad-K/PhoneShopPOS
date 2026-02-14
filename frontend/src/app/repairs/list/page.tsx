@@ -1,4 +1,4 @@
-import { BaseLayout } from '@/components/layouts/base-layout'
+import { PageHeader } from '@/components/shared/page-header'
 import { DataTable } from '@/components/shared/data-table'
 import { StatusBadge } from '@/components/shared/status-badge'
 import { Button } from '@/components/ui/button'
@@ -133,19 +133,18 @@ export default function RepairsListPage() {
 
   if (isLoading) {
     return (
-      <BaseLayout title="Repairs" description="Manage phone repairs">
+      <>
+        <PageHeader title="Repairs" description="Manage phone repairs" />
         <div className="flex items-center justify-center h-96">
           <LoadingSpinner />
         </div>
-      </BaseLayout>
+      </>
     )
   }
 
   return (
-    <BaseLayout
-      title="Repairs"
-      description={`Total: ${data?.meta.total || 0} repairs`}
-    >
+    <>
+      <PageHeader title="Repairs" description={`Total: ${data?.meta?.total || 0} repairs`} />
       <div className="space-y-4 p-6">
         <div className="flex gap-4 justify-between items-center">
           <div className="flex gap-4 items-center flex-1">
@@ -216,6 +215,6 @@ export default function RepairsListPage() {
           onRowClick={(repair) => navigate(`/repairs/${repair.id}`)}
         />
       </div>
-    </BaseLayout>
+    </>
   )
 }

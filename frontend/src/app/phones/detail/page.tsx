@@ -1,4 +1,4 @@
-import { BaseLayout } from '@/components/layouts/base-layout'
+import { PageHeader } from '@/components/shared/page-header'
 import { StatusBadge } from '@/components/shared/status-badge'
 import { BarcodeDisplay } from '@/components/shared/barcode-display'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -23,32 +23,32 @@ export default function PhoneDetailPage() {
 
   if (isLoading) {
     return (
-      <BaseLayout title="Phone Details" description="Loading...">
+      <>
+        <PageHeader title="Phone Details" description="Loading..." />
         <div className="flex items-center justify-center h-96">
           <LoadingSpinner />
         </div>
-      </BaseLayout>
+      </>
     )
   }
 
   if (!phone) {
     return (
-      <BaseLayout title="Phone Not Found" description="Phone not found">
+      <>
+        <PageHeader title="Phone Not Found" description="Phone not found" />
         <div className="text-center p-8">
           <p className="text-muted-foreground">Phone not found</p>
           <Button onClick={() => navigate('/phones')} className="mt-4">
             Back to Phones
           </Button>
         </div>
-      </BaseLayout>
+      </>
     )
   }
 
   return (
-    <BaseLayout
-      title={`${phone.brand} ${phone.model}`}
-      description={`Barcode: ${phone.barcode}`}
-    >
+    <>
+      <PageHeader title={`${phone.brand} ${phone.model}`} description={`Barcode: ${phone.barcode}`} />
       <div className="space-y-6 p-6">
         <div className="flex justify-end">
           <Button variant="outline" onClick={() => navigate('/phones')}>
@@ -273,6 +273,6 @@ export default function PhoneDetailPage() {
           </div>
         )}
       </div>
-    </BaseLayout>
+    </>
   )
 }

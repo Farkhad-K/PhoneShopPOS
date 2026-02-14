@@ -1,4 +1,4 @@
-import { BaseLayout } from '@/components/layouts/base-layout'
+import { PageHeader } from '@/components/shared/page-header'
 import { DataTable } from '@/components/shared/data-table'
 import { StatusBadge } from '@/components/shared/status-badge'
 import { Button } from '@/components/ui/button'
@@ -119,19 +119,18 @@ export default function PhonesListPage() {
 
   if (isLoading) {
     return (
-      <BaseLayout title="Phone Inventory" description="Manage your phone inventory">
+      <>
+        <PageHeader title="Phone Inventory" description="Manage your phone inventory" />
         <div className="flex items-center justify-center h-96">
           <LoadingSpinner />
         </div>
-      </BaseLayout>
+      </>
     )
   }
 
   return (
-    <BaseLayout
-      title="Phone Inventory"
-      description={`Total: ${data?.meta.total || 0} phones`}
-    >
+    <>
+      <PageHeader title="Phone Inventory" description={`Total: ${data?.meta?.total || 0} phones`} />
       <div className="space-y-4 p-6">
         <div className="flex gap-4 items-center">
           <div className="relative flex-1 max-w-sm">
@@ -199,6 +198,6 @@ export default function PhonesListPage() {
           onRowClick={(phone) => navigate(`/phones/${phone.id}`)}
         />
       </div>
-    </BaseLayout>
+    </>
   )
 }

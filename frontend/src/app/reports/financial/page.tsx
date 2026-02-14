@@ -1,9 +1,14 @@
-import { BaseLayout } from '@/components/layouts/base-layout'
+import { PageHeader } from '@/components/shared/page-header'
 import { MetricCard } from '@/components/shared/metric-card'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
-import { useGetFinancialReportQuery } from '@/api/reports'
+import {
+  useGetFinancialSummaryQuery,
+  useGetSalesReportQuery,
+  useGetPurchasesReportQuery,
+  useGetRepairsReportQuery,
+} from '@/api/reports'
 import { LoadingSpinner } from '@/components/ui/loading-spinner'
 import { useState } from 'react'
 import {
@@ -35,40 +40,39 @@ export default function FinancialReportPage() {
     endDate: new Date().toISOString().split('T')[0],
   })
 
-  const { data: report, isLoading } = useGetFinancialReportQuery(dateRange)
+  const { data: summary, isLoading: summaryLoading } = useGetFinancialSummaryQuery(dateRange)
+  const { data: salesReport } = useGetSalesReportQuery(dateRange)
+  const { data: purchasesReport } = useGetPurchasesReportQuery(dateRange)
+  const { data: repairsReport } = useGetRepairsReportQuery(dateRange)
 
   const handleExport = () => {
-    if (!report) return
+    if (!summary) return
 
     const csvContent = [
       ['Phone Shop POS - Financial Report'],
       ['Period', `${dateRange.startDate} to ${dateRange.endDate}`],
       [],
       ['Summary'],
-      ['Total Revenue', report.summary.totalRevenue],
-      ['Total Cost', report.summary.totalCost],
-      ['Total Profit', report.summary.totalProfit],
-      ['Profit Margin', `${report.summary.profitMargin}%`],
+      ['Total Revenue', summary.totalRevenue],
+      ['Total Expenses', summary.totalExpenses],
+      ['Net Profit', summary.netProfit],
+      ['Profit Margin', `${summary.profitMargin}%`],
       [],
       ['Sales'],
-      ['Count', report.sales.count],
-      ['Total Amount', report.sales.totalAmount],
-      ['Average Price', report.sales.averagePrice],
+      ['Count', salesReport?.totalSales ?? 'N/A'],
+      ['Total Revenue', salesReport?.totalRevenue ?? 'N/A'],
       [],
       ['Purchases'],
-      ['Count', report.purchases.count],
-      ['Total Amount', report.purchases.totalAmount],
-      ['Average Price', report.purchases.averagePrice],
+      ['Count', purchasesReport?.totalPurchases ?? 'N/A'],
+      ['Total Amount', purchasesReport?.totalAmount ?? 'N/A'],
       [],
       ['Repairs'],
-      ['Count', report.repairs.count],
-      ['Total Cost', report.repairs.totalCost],
-      ['Average Cost', report.repairs.averageCost],
+      ['Count', repairsReport?.totalRepairs ?? 'N/A'],
+      ['Total Cost', repairsReport?.totalRepairCost ?? 'N/A'],
       [],
-      ['Payments'],
-      ['Received', report.payments.received],
-      ['Paid', report.payments.paid],
-      ['Outstanding', report.payments.outstanding],
+      ['Receivables & Payables'],
+      ['Receivables', summary.totalReceivables],
+      ['Payables', summary.totalPayables],
     ]
       .map((row) => row.join(','))
       .join('\n')
@@ -81,24 +85,20 @@ export default function FinancialReportPage() {
     a.click()
   }
 
-  if (isLoading) {
+  if (summaryLoading) {
     return (
-      <BaseLayout
-        title="Financial Report"
-        description="View financial performance"
-      >
+      <>
+        <PageHeader title="Financial Report" description="View financial performance" />
         <div className="flex items-center justify-center h-96">
           <LoadingSpinner />
         </div>
-      </BaseLayout>
+      </>
     )
   }
 
   return (
-    <BaseLayout
-      title="Financial Report"
-      description={`${format(new Date(dateRange.startDate), 'MMM dd, yyyy')} - ${format(new Date(dateRange.endDate), 'MMM dd, yyyy')}`}
-    >
+    <>
+      <PageHeader title="Financial Report" description={`${format(new Date(dateRange.startDate), 'MMM dd, yyyy')} - ${format(new Date(dateRange.endDate), 'MMM dd, yyyy')}`} />
       <div className="space-y-6 p-6">
         <div className="flex gap-4 items-end justify-between">
           <div className="flex gap-4 items-end">
@@ -168,7 +168,7 @@ export default function FinancialReportPage() {
           </Button>
         </div>
 
-        {report && (
+        {summary && (
           <>
             <div className="grid gap-4 md:grid-cols-4">
               <MetricCard
@@ -177,33 +177,33 @@ export default function FinancialReportPage() {
                   style: 'currency',
                   currency: 'UZS',
                   minimumFractionDigits: 0,
-                }).format(report.summary.totalRevenue)}
+                }).format(summary.totalRevenue)}
                 icon={DollarSign}
                 iconClassName="text-green-600"
               />
               <MetricCard
-                title="Total Cost"
+                title="Total Expenses"
                 value={new Intl.NumberFormat('en-US', {
                   style: 'currency',
                   currency: 'UZS',
                   minimumFractionDigits: 0,
-                }).format(report.summary.totalCost)}
+                }).format(summary.totalExpenses)}
                 icon={TrendingDown}
                 iconClassName="text-red-600"
               />
               <MetricCard
-                title="Total Profit"
+                title="Net Profit"
                 value={new Intl.NumberFormat('en-US', {
                   style: 'currency',
                   currency: 'UZS',
                   minimumFractionDigits: 0,
-                }).format(report.summary.totalProfit)}
+                }).format(summary.netProfit)}
                 icon={TrendingUp}
                 iconClassName="text-blue-600"
               />
               <MetricCard
                 title="Profit Margin"
-                value={`${report.summary.profitMargin.toFixed(1)}%`}
+                value={`${summary.profitMargin.toFixed(1)}%`}
                 icon={Percent}
                 iconClassName="text-purple-600"
               />
@@ -211,7 +211,7 @@ export default function FinancialReportPage() {
 
             <Card>
               <CardHeader>
-                <CardTitle>Revenue vs Cost</CardTitle>
+                <CardTitle>Revenue vs Expenses</CardTitle>
               </CardHeader>
               <CardContent>
                 <ResponsiveContainer width="100%" height={300}>
@@ -219,9 +219,9 @@ export default function FinancialReportPage() {
                     data={[
                       {
                         name: 'Financial Overview',
-                        Revenue: report.summary.totalRevenue,
-                        Cost: report.summary.totalCost,
-                        Profit: report.summary.totalProfit,
+                        Revenue: summary.totalRevenue,
+                        Expenses: summary.totalExpenses,
+                        Profit: summary.netProfit,
                       },
                     ]}
                   >
@@ -231,7 +231,7 @@ export default function FinancialReportPage() {
                     <Tooltip />
                     <Legend />
                     <Bar dataKey="Revenue" fill="#22c55e" />
-                    <Bar dataKey="Cost" fill="#ef4444" />
+                    <Bar dataKey="Expenses" fill="#ef4444" />
                     <Bar dataKey="Profit" fill="#3b82f6" />
                   </BarChart>
                 </ResponsiveContainer>
@@ -246,26 +246,32 @@ export default function FinancialReportPage() {
                 <CardContent className="space-y-2">
                   <div className="flex justify-between">
                     <span className="text-muted-foreground">Total Sales:</span>
-                    <span className="font-semibold">{report.sales.count}</span>
+                    <span className="font-semibold">{salesReport?.totalSales ?? 0}</span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-muted-foreground">Total Amount:</span>
+                    <span className="text-muted-foreground">Total Revenue:</span>
                     <span className="font-semibold">
                       {new Intl.NumberFormat('en-US', {
                         style: 'currency',
                         currency: 'UZS',
                         minimumFractionDigits: 0,
-                      }).format(report.sales.totalAmount)}
+                      }).format(salesReport?.totalRevenue ?? 0)}
                     </span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-muted-foreground">Average Price:</span>
+                    <span className="text-muted-foreground">Total Profit:</span>
                     <span className="font-semibold">
                       {new Intl.NumberFormat('en-US', {
                         style: 'currency',
                         currency: 'UZS',
                         minimumFractionDigits: 0,
-                      }).format(report.sales.averagePrice)}
+                      }).format(salesReport?.totalProfit ?? 0)}
+                    </span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">Cash / Credit:</span>
+                    <span className="font-semibold">
+                      {salesReport?.cashSales ?? 0} / {salesReport?.creditSales ?? 0}
                     </span>
                   </div>
                 </CardContent>
@@ -281,7 +287,7 @@ export default function FinancialReportPage() {
                       Total Purchases:
                     </span>
                     <span className="font-semibold">
-                      {report.purchases.count}
+                      {purchasesReport?.totalPurchases ?? 0}
                     </span>
                   </div>
                   <div className="flex justify-between">
@@ -291,17 +297,23 @@ export default function FinancialReportPage() {
                         style: 'currency',
                         currency: 'UZS',
                         minimumFractionDigits: 0,
-                      }).format(report.purchases.totalAmount)}
+                      }).format(purchasesReport?.totalAmount ?? 0)}
                     </span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-muted-foreground">Average Price:</span>
+                    <span className="text-muted-foreground">Phones Purchased:</span>
                     <span className="font-semibold">
+                      {purchasesReport?.totalPhonesPurchased ?? 0}
+                    </span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">Unpaid:</span>
+                    <span className="font-semibold text-red-600">
                       {new Intl.NumberFormat('en-US', {
                         style: 'currency',
                         currency: 'UZS',
                         minimumFractionDigits: 0,
-                      }).format(report.purchases.averagePrice)}
+                      }).format(purchasesReport?.totalUnpaid ?? 0)}
                     </span>
                   </div>
                 </CardContent>
@@ -314,7 +326,7 @@ export default function FinancialReportPage() {
                 <CardContent className="space-y-2">
                   <div className="flex justify-between">
                     <span className="text-muted-foreground">Total Repairs:</span>
-                    <span className="font-semibold">{report.repairs.count}</span>
+                    <span className="font-semibold">{repairsReport?.totalRepairs ?? 0}</span>
                   </div>
                   <div className="flex justify-between">
                     <span className="text-muted-foreground">Total Cost:</span>
@@ -323,17 +335,23 @@ export default function FinancialReportPage() {
                         style: 'currency',
                         currency: 'UZS',
                         minimumFractionDigits: 0,
-                      }).format(report.repairs.totalCost)}
+                      }).format(repairsReport?.totalRepairCost ?? 0)}
                     </span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-muted-foreground">Average Cost:</span>
+                    <span className="text-muted-foreground">Avg Cost:</span>
                     <span className="font-semibold">
                       {new Intl.NumberFormat('en-US', {
                         style: 'currency',
                         currency: 'UZS',
                         minimumFractionDigits: 0,
-                      }).format(report.repairs.averageCost)}
+                      }).format(repairsReport?.averageRepairCost ?? 0)}
+                    </span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">Completed:</span>
+                    <span className="font-semibold">
+                      {repairsReport?.completedRepairs ?? 0}
                     </span>
                   </div>
                 </CardContent>
@@ -342,42 +360,47 @@ export default function FinancialReportPage() {
 
             <Card>
               <CardHeader>
-                <CardTitle>Payments Summary</CardTitle>
+                <CardTitle>Receivables & Payables</CardTitle>
               </CardHeader>
               <CardContent>
                 <div className="grid gap-4 md:grid-cols-3">
                   <div className="p-4 bg-green-50 dark:bg-green-950 rounded-lg">
                     <p className="text-sm text-muted-foreground mb-1">
-                      Received
+                      Receivables (owed by customers)
                     </p>
                     <p className="text-xl font-bold text-green-600">
                       {new Intl.NumberFormat('en-US', {
                         style: 'currency',
                         currency: 'UZS',
                         minimumFractionDigits: 0,
-                      }).format(report.payments.received)}
+                      }).format(summary.totalReceivables)}
                     </p>
                   </div>
                   <div className="p-4 bg-red-50 dark:bg-red-950 rounded-lg">
-                    <p className="text-sm text-muted-foreground mb-1">Paid</p>
+                    <p className="text-sm text-muted-foreground mb-1">
+                      Payables (owed to suppliers)
+                    </p>
                     <p className="text-xl font-bold text-red-600">
                       {new Intl.NumberFormat('en-US', {
                         style: 'currency',
                         currency: 'UZS',
                         minimumFractionDigits: 0,
-                      }).format(report.payments.paid)}
+                      }).format(summary.totalPayables)}
                     </p>
                   </div>
-                  <div className="p-4 bg-yellow-50 dark:bg-yellow-950 rounded-lg">
+                  <div className="p-4 bg-blue-50 dark:bg-blue-950 rounded-lg">
                     <p className="text-sm text-muted-foreground mb-1">
-                      Outstanding
+                      Inventory Value
                     </p>
-                    <p className="text-xl font-bold text-yellow-600">
+                    <p className="text-xl font-bold text-blue-600">
                       {new Intl.NumberFormat('en-US', {
                         style: 'currency',
                         currency: 'UZS',
                         minimumFractionDigits: 0,
-                      }).format(report.payments.outstanding)}
+                      }).format(summary.inventoryValue)}
+                    </p>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      {summary.inventoryCount} phones in stock
                     </p>
                   </div>
                 </div>
@@ -386,6 +409,6 @@ export default function FinancialReportPage() {
           </>
         )}
       </div>
-    </BaseLayout>
+    </>
   )
 }
