@@ -1,16 +1,20 @@
-# Phone Shop POS System - Development Guide
+# TechNova Phone Shop POS System
 
 ## Project Overview
 
-A comprehensive POS system for phone shops that manages:
-- Phone inventory (purchase, repair, sale lifecycle)
+A comprehensive Point-of-Sale system for phone shops with complete lifecycle management from purchase through repair to sale, including customer credit/debt tracking and financial analytics.
+
+**Business Domain:**
+- Phone inventory lifecycle (purchase → repair → sale)
 - Customer debt/credit tracking (pay-later transactions)
+- Supplier credit management
 - Profit and cost analysis
-- Worker payment management
+- Worker salary management
+- Comprehensive reporting and analytics
 
 **Tech Stack:**
 - Backend: NestJS 11, TypeORM, PostgreSQL 16
-- Frontend: React 19, Vite 7, TailwindCSS 4, ShadcnUI
+- Frontend: React 19, Vite 7, TailwindCSS 4, ShadcnUI, Redux Toolkit
 - Infrastructure: Docker, GitHub Actions
 
 ---
@@ -69,209 +73,109 @@ docker compose build       # Rebuild images
 
 ### Backend (NestJS)
 
-**1. Module Organization**
-- Use facade pattern with specialized sub-services
-- Example: `PhoneService` delegates to `PhoneCreateService`, `PhoneFindService`, etc.
-- Each feature gets its own module: `PhonesModule`, `PurchasesModule`, `SalesModule`
+**Architecture:**
+- Facade pattern: Main service delegates to sub-services (`PhoneCreateService`, `PhoneFindService`)
+- One module per feature: `PhonesModule`, `PurchasesModule`, `SalesModule`
+- File naming: kebab-case (`phone.service.ts`), PascalCase for classes (`PhoneService`)
 
-**2. File Naming**
-- kebab-case for files: `phone.service.ts`, `purchase.controller.ts`
-- PascalCase for classes: `PhoneService`, `PurchaseController`
-- DTOs suffix: `CreatePhoneDto`, `UpdatePhoneDto`
-- Entities suffix: `Phone`, `Purchase` (extend base entities)
-
-**3. Entity Design**
-- Extend `Extender` base class (provides id, createdAt, updatedAt, deletedAt, isActive)
+**Entities:**
+- Extend `Extender` base (provides id, timestamps, soft delete, isActive)
 - Use `PaymentExtender` for entities with amount field
-- Always use TypeORM decorators: `@Entity()`, `@Column()`, `@ManyToOne()`, etc.
-- Enable soft delete with `@DeleteDateColumn()`
+- Always use TypeORM decorators
+- Enable soft delete for financial records
 
-**4. Migrations**
-- NEVER use `synchronize: true` in production
-- Generate migrations for all schema changes
+**Migrations:**
+- ⚠️ NEVER use `synchronize: true` in production
+- Generate migrations for schema changes: `npm run migration:generate`
 - Name format: `YYYYMMDDHHMMSS-DescriptiveName.ts`
-- Always test migration up AND down (revert)
 
-**5. DTOs & Validation**
-- Use class-validator decorators: `@IsString()`, `@IsNumber()`, `@IsEnum()`
-- Use class-transformer: `@Type()`, `@Transform()`
-- Swagger documentation: `@ApiProperty()` with examples
-- Separate DTOs for create, update, and response
+**DTOs & Validation:**
+- Use class-validator: `@IsString()`, `@IsNumber()`, `@IsEnum()`
+- Swagger docs: `@ApiProperty()` with examples
+- Separate DTOs for create, update, response
 
-**6. Services**
-- Use dependency injection for all dependencies
-- Services should be testable (inject repositories, not hardcode)
-- Business logic in services, NOT controllers
-- Use TypeORM QueryBuilder for complex queries
+**Controllers & Services:**
+- Thin controllers (delegate to services)
+- Business logic in services only
+- Use guards: `@UseGuards(JwtRoleGuard)`
+- Dependency injection for testability
 
-**7. Controllers**
-- Thin controllers: delegate to services
-- Use proper HTTP methods: GET, POST, PATCH, DELETE
-- Use guards for authorization: `@UseGuards(JwtRoleGuard)`
-- Use decorators for params: `@Body()`, `@Param()`, `@Query()`, `@CurrentUser()`
-
-**8. Error Handling**
-- Throw HttpException with proper status codes
-- Use built-in exceptions: `NotFoundException`, `BadRequestException`, etc.
-- Global exception filter handles formatting
-
-**9. Testing**
-- Write tests BEFORE moving to next feature
+**Testing:**
 - Unit tests for services (mock repositories)
-- E2E tests for critical flows (purchase → repair → sale)
-- Aim for >80% coverage on business logic
+- E2E tests for critical flows
+- Target >80% coverage on business logic
 
 ### Frontend (React)
 
-**1. Component Organization**
+**Structure:**
 ```
 src/
-├── api/              # RTK Query endpoints (one file per entity)
-├── app/              # Page components (feature-based folders)
-├── components/       # Reusable UI components
-│   ├── ui/           # ShadcnUI base components
-│   ├── features/     # Feature-specific components (PhoneCard, PurchaseForm)
-│   └── layouts/      # Layout wrappers
-├── hooks/            # Custom hooks (usePhone, usePurchase)
-├── store/            # Redux slices (one per entity)
-├── interfaces/       # TypeScript types (match backend DTOs)
-└── utils/            # Helper functions
+├── api/          # RTK Query endpoints (one per entity)
+├── app/          # Pages (feature-based folders)
+├── components/   # Reusable UI (ui/, features/, layouts/)
+├── store/        # Redux slices
+├── interfaces/   # TypeScript types (match backend DTOs)
+└── hooks/        # Custom hooks
 ```
 
-**2. Component Style**
-- Use functional components only
-- Use hooks (useState, useEffect, useCallback, useMemo)
-- One component per file
-- Export as default for pages, named exports for components
-
-**3. State Management**
-- Redux Toolkit for global state (auth, entities)
-- RTK Query for server state (auto-caching, invalidation)
+**State Management:**
+- RTK Query for ALL API calls (caching, auto-retry)
+- Redux Toolkit for global state
 - Local state (useState) for UI-only state
-- Redux Persist for auth state only
-
-**4. API Integration**
-- Use RTK Query for ALL API calls
 - Define endpoints in `src/api/{entity}/index.ts`
-- Tag-based cache invalidation
-- Auto-retry with token refresh on 401
 
-**5. Forms**
-- React Hook Form for form state
-- Zod for validation schemas
-- ShadcnUI Form components for consistent styling
-- Extract complex forms into separate components
+**Forms & Styling:**
+- React Hook Form + Zod validation
+- TailwindCSS utility classes (mobile-first)
+- ShadcnUI components
+- Use `cn()` for conditional classes
 
-**6. Styling**
-- TailwindCSS utility classes (no custom CSS unless necessary)
-- Use `cn()` helper from `@/lib/utils` for conditional classes
-- Follow ShadcnUI component patterns
-- Responsive: mobile-first approach
-
-**7. Routing**
+**Routing & Performance:**
 - React Router 7 with lazy loading
-- Protected routes via `ProtectedRoute` wrapper
-- Role-based route restrictions
-- 404 catch-all route
+- Protected routes with role-based access
+- Memoize with useMemo/useCallback
+- React.memo for pure components
 
-**8. TypeScript**
+**TypeScript:**
 - Strict mode enabled
-- Define interfaces matching backend DTOs
-- Use generics for reusable components
-- No `any` types unless absolutely necessary
-
-**9. Performance**
-- Lazy load pages (React.lazy)
-- Memoize expensive computations (useMemo)
-- Memoize callbacks (useCallback)
-- Use React.memo for pure components
-- Optimize re-renders with proper dependencies
+- Match backend DTOs exactly
+- No `any` types (use `unknown` if needed)
 
 ---
 
-## Project-Specific Patterns
+## Core Business Patterns
 
 ### 1. Role-Based Access Control
+**Hierarchy:** OWNER (4) → MANAGER (3) → CASHIER (2) → TECHNICIAN (1)
+- Backend: `@UseGuards(JwtRoleGuard)` with role hierarchy check
+- Frontend: `<ProtectedRoute allowedRoles={['OWNER', 'MANAGER']}>`
 
-**Roles:** OWNER → MANAGER → CASHIER → TECHNICIAN
-
-**Backend Guard Logic:**
-```typescript
-// In JwtRoleGuard
-const roleHierarchy = {
-  OWNER: 4,
-  MANAGER: 3,
-  CASHIER: 2,
-  TECHNICIAN: 1
-};
-
-// Check if user role >= required role
-if (roleHierarchy[userRole] < roleHierarchy[requiredRole]) {
-  throw new ForbiddenException();
-}
+### 2. Phone Lifecycle
 ```
-
-**Frontend Route Protection:**
-```typescript
-<ProtectedRoute allowedRoles={['OWNER', 'MANAGER']}>
-  <ReportsPage />
-</ProtectedRoute>
+Purchase → IN_STOCK → IN_REPAIR → READY_FOR_SALE → SOLD → (RETURNED)
 ```
-
-### 2. Phone Lifecycle Status
-
-```typescript
-enum PhoneStatus {
-  IN_STOCK = 'IN_STOCK',           // Ready to sell (no repair needed)
-  IN_REPAIR = 'IN_REPAIR',         // Currently being repaired
-  READY_FOR_SALE = 'READY_FOR_SALE', // Repaired, ready to sell
-  SOLD = 'SOLD',                   // Sold to customer
-  RETURNED = 'RETURNED'            // Returned by customer (optional)
-}
-```
+**Status Enum:** `IN_STOCK | IN_REPAIR | READY_FOR_SALE | SOLD | RETURNED`
 
 ### 3. Financial Calculations
-
-**Total Cost Formula:**
-```typescript
-totalCost = purchasePrice + sumOfRepairCosts
-```
-
-**Profit Formula:**
-```typescript
-profit = salePrice - totalCost
-```
-
-**Customer Balance:**
-- Debt: Customer owes shop (unpaid/partial sales)
-- Credit: Shop owes customer (unpaid/partial purchases)
-- Show both separately, do NOT auto-net
+- **Total Cost:** `purchasePrice + sum(repairCosts)`
+- **Profit:** `salePrice - totalCost`
+- **Customer Balance:** Show debt and credit separately (do NOT auto-net)
 
 ### 4. Payment Application (FIFO)
-
-When customer makes payment:
-1. Fetch all unpaid/partially paid transactions (oldest first)
+1. Fetch unpaid/partial transactions (oldest first)
 2. Apply payment to oldest transaction
-3. If payment exceeds transaction balance, apply remainder to next transaction
-4. Update balances and mark fully paid transactions
+3. If remainder exists, apply to next transaction
+4. Update balances and payment status
 
 ### 5. Audit Trail
-
-All financial records include:
-- `createdBy` (user who created)
-- `updatedBy` (user who last updated)
-- `deletedBy` (user who soft-deleted)
+All financial records auto-populate:
+- `createdBy`, `updatedBy`, `deletedBy` (via AuditSubscriber)
 - Timestamps for all actions
 
-Use `AuditSubscriber` (already configured) to auto-populate these fields.
-
 ### 6. Barcode Generation
-
-For each phone:
-- Generate unique barcode on purchase (format: `PH{timestamp}{random}`)
-- Store barcode in `Phone.barcode` field
-- Frontend: Use `react-barcode` or similar library to display/print
-- Print labels for physical phone inventory
+- Format: `PH{timestamp}{random}`
+- Generated on purchase
+- Use for inventory tracking and labels
 
 ---
 
@@ -288,358 +192,67 @@ For each phone:
 
 ---
 
-## Implementation Learnings & Best Practices
+## Key Implementation Patterns
 
-### 1. TypeORM Migration Workarounds
+### 1. TypeORM Migrations
+**Best Practice:** Use migrations, NEVER `synchronize: true` in production
+- Generate: `npm run migration:generate -- src/migrations/Name`
+- For complex SQL: Create direct SQL file and execute via DataSource
+- Path alias issues: Use direct SQL migration when TypeORM CLI fails
 
-**Problem:** TypeORM migration CLI has issues with ts-node path resolution when using `src/` path aliases.
-
-**Solution:**
-- Create direct SQL migration files when TypeORM CLI fails
-- Execute migrations using DataSource directly:
-
+### 2. Testing Patterns
+**Unit Tests:** Mock repositories with `getRepositoryToken(Entity)`
+**QueryBuilder Mock:**
 ```typescript
-// run-worker-migration.ts
-import { AppDataSource } from './typeorm.config';
-import * as fs from 'fs';
-
-async function runMigration() {
-  await AppDataSource.initialize();
-  const sql = fs.readFileSync('create-worker-tables.sql', 'utf8');
-  await AppDataSource.query(sql);
-  await AppDataSource.destroy();
-}
-```
-
-**When to use:**
-- Complex migrations with custom SQL
-- When migration:generate fails due to path resolution
-- For database-specific features not supported by TypeORM decorators
-
-### 2. Testing with TypeORM Repositories
-
-**Unit Test Pattern for Services:**
-
-```typescript
-describe('ServiceName', () => {
-  let service: ServiceName;
-  let repository: Repository<Entity>;
-
-  beforeEach(async () => {
-    const module = await Test.createTestingModule({
-      providers: [
-        ServiceName,
-        {
-          provide: getRepositoryToken(Entity),
-          useValue: {
-            create: jest.fn(),
-            save: jest.fn(),
-            findOne: jest.fn(),
-            find: jest.fn(),
-            softDelete: jest.fn(),
-          },
-        },
-      ],
-    }).compile();
-
-    service = module.get<ServiceName>(ServiceName);
-    repository = module.get(getRepositoryToken(Entity));
-  });
-
-  afterEach(() => {
-    jest.clearAllMocks();
-  });
-
-  it('should test something', async () => {
-    jest.spyOn(repository, 'findOne').mockResolvedValue(mockEntity);
-    const result = await service.method();
-    expect(result).toBeDefined();
-  });
-});
-```
-
-**QueryBuilder Mocking Pattern:**
-
-```typescript
-const mockQueryBuilder = {
+const mockQB = {
   leftJoinAndSelect: jest.fn().mockReturnThis(),
   where: jest.fn().mockReturnThis(),
-  andWhere: jest.fn().mockReturnThis(),
-  orderBy: jest.fn().mockReturnThis(),
-  skip: jest.fn().mockReturnThis(),
-  take: jest.fn().mockReturnThis(),
   getManyAndCount: jest.fn().mockResolvedValue([[mockEntity], 1]),
-  getOne: jest.fn().mockResolvedValue(mockEntity),
 };
-
-jest.spyOn(repository, 'createQueryBuilder').mockReturnValue(mockQueryBuilder as any);
+jest.spyOn(repository, 'createQueryBuilder').mockReturnValue(mockQB as any);
 ```
 
-**Jest Configuration for Path Aliases:**
-
-```json
-// package.json
-{
-  "jest": {
-    "moduleNameMapper": {
-      "^src/(.*)$": "<rootDir>/$1"
-    }
-  }
-}
-
-// test/jest-e2e.json
-{
-  "moduleNameMapper": {
-    "^src/(.*)$": "<rootDir>/../src/$1"
-  }
-}
-```
-
-### 3. Worker Payment Management Pattern
-
-**Unique Constraint Implementation:**
-
+### 3. Payment FIFO Algorithm
 ```typescript
-// SQL Migration
-CREATE UNIQUE INDEX idx_worker_payment_month
-ON worker_payments(worker_id, month, year)
+// Fetch unpaid transactions (oldest first)
+// Apply payment to oldest first
+// If remainder, continue to next transaction
+// Update payment status accordingly
+```
+
+### 4. Transaction-Based Operations
+Use `dataSource.transaction()` for multi-step operations that must succeed/fail together:
+- Creating sale + updating phone status
+- Applying payment + updating balances
+
+### 5. Calculated vs Stored Fields
+**Calculate:** Phone.totalCost, Sale.profit, Customer.balance
+**Store:** Phone.status, Sale.paymentStatus, WorkerPayment.totalPaid
+
+**Virtual Getters:**
+```typescript
+get profit(): number {
+  return this.salePrice - this.phone.totalCost;
+}
+```
+
+### 6. Unique Constraints with Soft Delete
+```sql
+CREATE UNIQUE INDEX idx_name ON table(column1, column2)
 WHERE deleted_at IS NULL;
 ```
 
-**Service Validation:**
-
+### 7. Optional Query Parameters
 ```typescript
-async create(dto: CreateWorkerPaymentDto): Promise<WorkerPayment> {
-  // Check for duplicate payment
-  const existing = await this.repository.findOne({
-    where: {
-      workerId: dto.workerId,
-      month: dto.month,
-      year: dto.year,
-    },
-  });
-
-  if (existing) {
-    throw new BadRequestException(
-      `Payment for ${dto.month}/${dto.year} already exists`
-    );
-  }
-
-  // Auto-calculate total
-  const totalPaid = dto.amount + (dto.bonus || 0) - (dto.deduction || 0);
-
-  const payment = this.repository.create({
-    ...dto,
-    totalPaid,
-  });
-
-  return this.repository.save(payment);
-}
+// ❌ @Query('year', ParseIntPipe) year?: number
+// ✅ @Query('year') year?: string
+const yearNum = year ? parseInt(year, 10) : undefined;
 ```
 
-### 4. Payment FIFO Algorithm Implementation
-
-**Core Concept:** Apply payments to oldest transactions first
-
-```typescript
-async applyPayment(customerId: number, amount: number): Promise<void> {
-  // 1. Get unpaid/partial transactions, oldest first
-  const transactions = await this.getUnpaidTransactions(customerId);
-
-  let remainingAmount = amount;
-
-  for (const transaction of transactions) {
-    if (remainingAmount <= 0) break;
-
-    const amountToApply = Math.min(
-      remainingAmount,
-      transaction.remainingAmount
-    );
-
-    transaction.paidAmount += amountToApply;
-    transaction.remainingAmount -= amountToApply;
-
-    if (transaction.remainingAmount === 0) {
-      transaction.paymentStatus = PaymentStatus.PAID;
-    } else {
-      transaction.paymentStatus = PaymentStatus.PARTIAL;
-    }
-
-    await this.repository.save(transaction);
-    remainingAmount -= amountToApply;
-  }
-}
-```
-
-### 5. Optional Query Parameter Validation
-
-**Problem:** `ParseIntPipe` fails on optional query parameters
-
-**Solution:** Accept string and manually parse
-
-```typescript
-// ❌ This fails when parameter is not provided
-@Query('year', ParseIntPipe) year?: number
-
-// ✅ This works correctly
-@Query('year') year?: string
-
-// In service method:
-const yearNumber = year ? parseInt(year, 10) : undefined;
-```
-
-### 6. Transaction-Based Operations
-
-**Use Case:** When multiple database operations must succeed or fail together
-
-```typescript
-async createSale(dto: CreateSaleDto): Promise<Sale> {
-  return this.dataSource.transaction(async (manager) => {
-    // 1. Create sale
-    const sale = manager.create(Sale, dto);
-    await manager.save(sale);
-
-    // 2. Update phone status
-    const phone = await manager.findOne(Phone, { where: { id: dto.phoneId } });
-    phone.status = PhoneStatus.SOLD;
-    phone.saleId = sale.id;
-    await manager.save(phone);
-
-    // 3. Return with relations
-    return manager.findOne(Sale, {
-      where: { id: sale.id },
-      relations: ['phone', 'customer'],
-    });
-  });
-}
-```
-
-### 7. Calculated Fields vs Stored Fields
-
-**When to Calculate on Query:**
-- Phone totalCost = purchasePrice + sum(repairs)
-- Sale profit = salePrice - phone.totalCost
-- Customer balance = sum(unpaid transactions)
-
-**When to Store:**
-- Sale.paymentStatus (updated on payment)
-- Phone.status (updated on repair/sale)
-- WorkerPayment.totalPaid (calculated once on creation)
-
-**Pattern for Calculated Fields:**
-
-```typescript
-@Entity()
-export class Sale {
-  // Stored fields
-  @Column() salePrice: number;
-
-  // Relations
-  @ManyToOne(() => Phone)
-  phone: Phone;
-
-  // Virtual getter (not stored in DB)
-  get profit(): number {
-    if (!this.phone) return 0;
-    return this.salePrice - this.phone.totalCost;
-  }
-}
-```
-
-### 8. Enum Management
-
-**Centralized Enum File:**
-
-```typescript
-// src/common/enums/enum.ts
-export enum UserRole {
-  OWNER = 'OWNER',         // Hierarchy: 4
-  MANAGER = 'MANAGER',     // Hierarchy: 3
-  CASHIER = 'CASHIER',     // Hierarchy: 2
-  TECHNICIAN = 'TECHNICIAN' // Hierarchy: 1
-}
-
-export enum PhoneStatus {
-  IN_STOCK = 'IN_STOCK',
-  IN_REPAIR = 'IN_REPAIR',
-  READY_FOR_SALE = 'READY_FOR_SALE',
-  SOLD = 'SOLD',
-  RETURNED = 'RETURNED'
-}
-
-export enum PaymentStatus {
-  UNPAID = 'UNPAID',
-  PARTIAL = 'PARTIAL',
-  PAID = 'PAID'
-}
-```
-
-**Benefits:**
-- Single source of truth
-- Easy to maintain
-- Type-safe across application
-- No magic strings
-
-### 9. Barcode Generation Utility
-
-**Implementation:**
-
-```typescript
-// src/common/utils/barcode-generator.util.ts
-export function generateBarcode(): string {
-  const timestamp = Date.now();
-  const random = Math.floor(Math.random() * 1000000)
-    .toString()
-    .padStart(6, '0');
-  return `PH${timestamp}${random}`;
-}
-```
-
-**Usage:**
-
-```typescript
-const phone = this.phoneRepository.create({
-  ...dto,
-  barcode: generateBarcode(),
-});
-```
-
-### 10. E2E Test Structure
-
-**Complete Workflow Testing:**
-
-```typescript
-describe('Phone Lifecycle E2E', () => {
-  let app: INestApplication;
-  let authToken: string;
-  let phoneId: number;
-
-  beforeAll(async () => {
-    // Initialize app, login
-  });
-
-  it('Step 1: Create purchase', async () => {
-    // Test purchase creation
-    phoneId = response.body.phones[0].id;
-  });
-
-  it('Step 2: Create repair', async () => {
-    // Use phoneId from previous test
-  });
-
-  it('Step 3: Complete repair', async () => {
-    // Verify status changes
-  });
-
-  it('Step 4: Create sale', async () => {
-    // Verify profit calculation
-  });
-
-  it('Step 5: Verify cannot sell again', async () => {
-    // Test validation
-  });
-});
-```
+### 8. Centralized Enums
+Store all enums in `src/common/enums/enum.ts`:
+- `UserRole`, `PhoneStatus`, `PaymentStatus`
+- Single source of truth, type-safe
 
 ---
 
@@ -693,62 +306,39 @@ VITE_APP_NAME="Phone Shop POS"
 ## Deployment Checklist
 
 - [ ] Set `synchronize: false` in TypeORM config
-- [ ] Run all migrations on production DB
+- [ ] Run migrations: `npm run migration:run`
 - [ ] Update environment variables (secure secrets)
-- [ ] Build backend: `npm run build`
-- [ ] Build frontend: `npm run build`
-- [ ] Run Docker Compose: `docker compose up -d`
-- [ ] Verify health check: `curl http://localhost:4400/health`
+- [ ] Build: `npm run build` (backend & frontend)
+- [ ] Deploy: `docker compose up -d` or `./deploy.sh`
+- [ ] Verify: Health check and Swagger docs
 - [ ] Seed initial admin user (one-time)
-- [ ] Backup database before major changes
+- [ ] Backup database
 
 ---
 
 ## Common Tasks
 
-### Adding a New Entity
-1. Create migration: `npm run migration:generate -- src/migrations/CreateEntityTable`
-2. Create entity class in `src/{entity}/entities/{entity}.entity.ts`
-3. Create DTOs: `create-{entity}.dto.ts`, `update-{entity}.dto.ts`
-4. Create sub-services: `{entity}-create.service.ts`, `{entity}-find.service.ts`, etc.
-5. Create facade service: `{entity}.service.ts`
-6. Create controller: `{entity}.controller.ts`
-7. Create module: `{entity}.module.ts`
-8. Add module to `app.module.ts`
-9. Write unit tests for service
-10. Run migration: `npm run migration:run`
+### Adding Backend Entity
+1. Generate migration: `npm run migration:generate -- src/migrations/CreateEntity`
+2. Create entity, DTOs, sub-services, facade service, controller, module
+3. Add module to `app.module.ts`
+4. Write unit tests
+5. Run migration: `npm run migration:run`
 
-### Adding a New Page
-1. Create page component in `src/app/{feature}/{page}.tsx`
+### Adding Frontend Page
+1. Create page in `src/app/{feature}/{page}.tsx`
 2. Add route to `src/config/routes.tsx`
-3. Add RTK Query endpoints in `src/api/{entity}/index.ts`
-4. Create Redux slice if needed in `src/store/slices/{entity}Slice.ts`
-5. Add navigation link to sidebar (`src/components/app-sidebar.tsx`)
-6. Add TypeScript interfaces in `src/interfaces/{entity}/index.d.ts`
+3. Create RTK Query endpoints in `src/api/{entity}/index.ts`
+4. Add TypeScript interfaces in `src/interfaces/{entity}/index.d.ts`
+5. Add to sidebar navigation
 
 ---
 
 ## Git Workflow
 
-- `main` branch: production-ready code
-- Feature branches: `feature/{entity}-{action}` (e.g., `feature/phones-crud`)
-- Commit messages: Conventional Commits format
-  - `feat: add phone purchase feature`
-  - `fix: resolve debt calculation bug`
-  - `refactor: extract payment logic to service`
-- Pull requests: Required before merging to main
-- CI/CD: Automatic deployment on merge to main
-
----
-
-## Support & Resources
-
-- NestJS Docs: https://docs.nestjs.com
-- TypeORM Docs: https://typeorm.io
-- React Docs: https://react.dev
-- ShadcnUI: https://ui.shadcn.com
-- Redux Toolkit: https://redux-toolkit.js.org
-- TailwindCSS: https://tailwindcss.com
+- **Branches:** `main` (production), `feature/{entity}-{action}`
+- **Commits:** Conventional Commits (`feat:`, `fix:`, `refactor:`)
+- **PRs:** Required before merging to main
 
 ---
 
@@ -757,90 +347,153 @@ VITE_APP_NAME="Phone Shop POS"
 ### Backend: ✅ COMPLETE (as of 2026-02-13)
 
 **Implementation Status:**
-- All 8 milestones completed
-- 21/21 unit tests passing
-- E2E test suite complete
-- 100% requirements met (verified against `tz.txt`)
+- ✅ All 8 milestones completed
+- ✅ 21/21 unit tests passing
+- ✅ E2E test suite complete
+- ✅ 100% requirements met (verified against `tz.txt`)
+- ✅ Swagger API documentation at `/api/docs`
 
-**Documentation:**
-- **`backend/IMPLEMENTATION_STATUS.md`** - Detailed requirements verification mapping each requirement from tz.txt to implementation
-- **`backend/backend-plan.md`** - Complete implementation plan with all milestones marked complete
-- **`tz.txt`** - Original requirements specification
-- **Swagger API** - Available at `/api/docs` when backend is running
-
-**Key Features Implemented:**
+**Key Features:**
 - Complete phone lifecycle (purchase → repair → sale)
 - Customer debt/credit tracking with FIFO payment
-- Worker salary management with unique month/year payments
+- Supplier credit management
+- Worker salary management (unique month/year payments)
 - Comprehensive reporting and analytics
-- Role-based access control (OWNER > MANAGER > CASHIER > TECHNICIAN)
-- Audit trail and soft delete
+- Role-based access control (OWNER → MANAGER → CASHIER → TECHNICIAN)
+- Audit trail and soft delete for all operations
 - Barcode generation for phones
 - Transaction-based operations for data integrity
 
-**Production Readiness:**
-- ✅ All business logic implemented and tested
-- ✅ Database migrations complete
-- ✅ API documentation via Swagger
-- ✅ Role-based security
-- ✅ Error handling and validation
-- ✅ Soft delete for financial records
-- ✅ Audit trail for all operations
+**Documentation:**
+- `backend/IMPLEMENTATION_STATUS.md` - Requirements verification
+- `backend/backend-plan.md` - Implementation plan
+- `tz.txt` - Original requirements specification
 
-**Next Phase:** Frontend development
+### Frontend: 🚧 IN PROGRESS (as of 2026-02-14)
 
-### Frontend: 📋 PENDING
+**✅ Completed:**
+- ✅ Rebranded from "ShadcnStore" to "TechNova"
+- ✅ Removed demo apps (Mail, Tasks, Chat, Calendar)
+- ✅ Restructured navigation for POS-specific features
+- ✅ Connected dashboards to real backend endpoints
+- ✅ Fixed API data fetching (removed all dummy data)
+- ✅ Implemented user management with backend integration
+- ✅ Created RTK Query endpoints for all entities
+- ✅ Set up Redux store with proper state management
+- ✅ Configured authentication flow with JWT
+- ✅ Implemented protected routes and role-based access
 
-Frontend development will begin after backend is deployed to staging environment.
+**Current Navigation Structure:**
+- **Main Dashboards:** Sales Dashboard, Inventory Dashboard, POS Dashboard
+- **Inventory Group:** Phones, Purchases, Repairs
+- **Transactions Group:** Sales, Customers
+- **Management Group:** Workers, Reports, Users
+- **Pages:** Landing, Auth, Settings, etc.
 
-**Planned Stack:**
-- React 19 with TypeScript
-- Vite 7 for build tooling
-- TailwindCSS 4 for styling
-- ShadcnUI for component library
-- Redux Toolkit + RTK Query for state management
-- React Router 7 for routing
+**📋 Remaining Work:**
+- Component prop type mismatches (dashboard components)
+- Toast notification system (replace `alert()` calls)
+- Pre-existing TypeScript errors in some POS pages
+- Enhanced form validation and error handling
+- Confirmation modals for destructive actions
+
+**Documentation:**
+- `frontend/RESTRUCTURING_SUMMARY.md` - Rebranding and restructuring details
+- `frontend/DASHBOARD_FIX_SUMMARY.md` - API integration fixes
 
 ---
 
 ## Quick Reference
 
-### Backend Commands
+### Commands
+**Backend:**
 ```bash
-npm run start:dev          # Development mode
-npm run test              # Run unit tests (21 tests)
-npm run test:e2e          # Run E2E tests
-npm run db:reseed         # Reset database with seed data
-npm run migration:run     # Run pending migrations
+npm run start:dev     # Dev mode with hot-reload
+npm run test          # Unit tests (21 tests)
+npm run test:e2e      # E2E tests
+npm run db:reseed     # Reset DB with seed data
+npm run migration:run # Apply migrations
 ```
 
-### Key Files
-- `/backend/src/app.module.ts` - Main application module
-- `/backend/src/*/entities/*.entity.ts` - Database entities
-- `/backend/src/*/services/*.service.ts` - Business logic
-- `/backend/src/*/dto/*.dto.ts` - Data transfer objects
-- `/backend/src/migrations/*.ts` - Database migrations
-- `/backend/test/*.e2e-spec.ts` - E2E tests
+**Frontend:**
+```bash
+npm run dev           # Vite dev server
+npm run build         # Production build
+npm run typecheck     # TypeScript check
+```
 
-### Database Entities
-1. **User** - System users with roles (OWNER, MANAGER, CASHIER, TECHNICIAN)
-2. **Customer** - Customers for debt/credit tracking
-3. **Supplier** - Suppliers for purchases (pay-later creates credit)
-4. **Phone** - Inventory items with lifecycle tracking
-5. **Purchase** - Phone purchase transactions
-6. **Repair** - Repair records with costs
-7. **Sale** - Phone sale transactions
-8. **Payment** - Customer/supplier payment records
-9. **Worker** - Employee records
-10. **WorkerPayment** - Monthly salary payments
+### Database Entities (10)
+1. **User** - System users with roles
+2. **Customer** - Debt/credit tracking
+3. **Supplier** - Purchase suppliers
+4. **Phone** - Inventory with lifecycle
+5. **Purchase** - Purchase transactions
+6. **Repair** - Repair records
+7. **Sale** - Sale transactions
+8. **Payment** - Payment records
+9. **Worker** - Employees
+10. **WorkerPayment** - Monthly salaries
 
-### Business Rules Summary
-- Cannot sell already sold phone
-- Cannot repair sold phone
-- Customer required for pay-later transactions
-- Payment amount cannot exceed remaining balance
-- FIFO payment application (oldest first)
-- Profit = salePrice - (purchasePrice + sum of repairs)
-- Phone totalCost = purchasePrice + sum of repairs
-- Unique constraint: one worker payment per month/year
-- Soft delete for all financial records
+### Critical Business Rules
+- ⚠️ Cannot sell/repair already sold phone
+- ⚠️ Customer required for pay-later
+- ⚠️ Payment ≤ remaining balance
+- ⚠️ FIFO payment application
+- ⚠️ One worker payment per month/year
+- ⚠️ Soft delete for financial records
+- **Profit:** `salePrice - (purchasePrice + repairs)`
+- **Total Cost:** `purchasePrice + sum(repairs)`
+
+### API Documentation
+- **Swagger:** `http://localhost:5000/api/docs` (when backend running)
+- **Main Endpoints:** `/api/phones`, `/api/sales`, `/api/purchases`, `/api/repairs`, `/api/reports`
+
+### Documentation Files
+- `backend/IMPLEMENTATION_STATUS.md` - Requirements verification
+- `backend/backend-plan.md` - Implementation plan
+- `frontend/RESTRUCTURING_SUMMARY.md` - Frontend restructuring
+- `frontend/DASHBOARD_FIX_SUMMARY.md` - Dashboard API fixes
+- `tz.txt` - Original requirements
+
+---
+
+## Recent Changes (2026-02-14)
+
+### ✅ Frontend Restructuring Complete
+- Rebranded from "ShadcnStore" → "TechNova"
+- Removed demo apps (Mail, Tasks, Chat, Calendar)
+- Restructured sidebar navigation for POS features
+- Updated landing page, navbar, footer with TechNova branding
+- Changed default route from `/pos-dashboard` to `/` (Landing)
+
+### ✅ Dashboard API Integration
+- Connected Sales Dashboard to `/api/sales` endpoint
+- Connected Inventory Dashboard to `/api/reports/dashboard` endpoint
+- Fixed POS Dashboard to use `useGetDashboardStatsQuery()`
+- Removed all hardcoded dummy data
+- Fixed TypeScript interfaces to match backend DTOs
+- Eliminated all 404 API errors
+
+### ✅ Users Management Integration
+- Created RTK Query endpoints for users CRUD
+- Connected Users page to backend API
+- Added loading/error states
+- Implemented create/update/delete functionality
+
+### 📋 Pending Work
+- Fix component prop types in dashboard child components
+- Add toast notification system (replace `alert()`)
+- Fix pre-existing TypeScript errors in some POS pages
+- Add confirmation modals for destructive actions
+- Implement edit dialog for Users page
+
+---
+
+## Support & Resources
+
+- **NestJS:** https://docs.nestjs.com
+- **TypeORM:** https://typeorm.io
+- **React:** https://react.dev
+- **ShadcnUI:** https://ui.shadcn.com
+- **Redux Toolkit:** https://redux-toolkit.js.org
+- **TailwindCSS:** https://tailwindcss.com

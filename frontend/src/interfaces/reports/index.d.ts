@@ -3,82 +3,99 @@
 declare interface ReportFilterParams {
   startDate?: string
   endDate?: string
-  groupBy?: 'day' | 'week' | 'month'
+  customerId?: number
+  supplierId?: number
 }
 
-declare interface FinancialReport {
-  period: {
-    startDate: string
-    endDate: string
-  }
-  summary: {
-    totalRevenue: number
+declare interface SalesReport {
+  totalSales: number
+  totalRevenue: number
+  totalCost: number
+  totalProfit: number
+  profitMargin: number
+  cashSales: number
+  creditSales: number
+  paidSales: number
+  unpaidSales: number
+  startDate?: string
+  endDate?: string
+}
+
+declare interface PurchasesReport {
+  totalPurchases: number
+  totalAmount: number
+  totalPaid: number
+  totalUnpaid: number
+  totalPhonesPurchased: number
+  bySupplier: {
+    supplierId: number
+    supplierName: string
+    totalPurchases: number
+    totalAmount: number
+    totalPaid: number
+  }[]
+  startDate?: string
+  endDate?: string
+}
+
+declare interface RepairsReport {
+  totalRepairs: number
+  totalRepairCost: number
+  averageRepairCost: number
+  completedRepairs: number
+  pendingRepairs: number
+  inProgressRepairs: number
+  cancelledRepairs: number
+  commonRepairs: {
+    description: string
+    count: number
     totalCost: number
-    totalProfit: number
-    profitMargin: number
-  }
+  }[]
+  startDate?: string
+  endDate?: string
+}
+
+declare interface FinancialSummary {
+  totalRevenue: number
+  totalExpenses: number
+  netProfit: number
+  profitMargin: number
+  totalReceivables: number
+  totalPayables: number
+  inventoryValue: number
+  inventoryCount: number
+  startDate?: string
+  endDate?: string
+}
+
+declare interface DashboardStats {
   sales: {
-    count: number
-    totalAmount: number
-    averagePrice: number
+    today: number
+    thisWeek: number
+    thisMonth: number
+    todayRevenue: number
+    weekRevenue: number
+    monthRevenue: number
   }
-  purchases: {
-    count: number
-    totalAmount: number
-    averagePrice: number
+  inventory: {
+    totalPhones: number
+    inStock: number
+    inRepair: number
+    readyForSale: number
+    sold: number
+    available: number
+  }
+  financial: {
+    todayProfit: number
+    weekProfit: number
+    monthProfit: number
+    receivables: number
+    payables: number
   }
   repairs: {
-    count: number
-    totalCost: number
-    averageCost: number
+    pending: number
+    inProgress: number
+    completedToday: number
+    completedThisWeek: number
   }
-  payments: {
-    received: number
-    paid: number
-    outstanding: number
-  }
-}
-
-declare interface InventoryReport {
-  totalPhones: number
-  phonesByStatus: {
-    status: PhoneStatus
-    count: number
-    totalValue: number
-  }[]
-  phonesByCondition: {
-    condition: PhoneCondition
-    count: number
-  }[]
-  averageRepairCost: number
-  averageSaleProfit: number
-  slowMovingInventory: {
-    phoneId: number
-    brand: string
-    model: string
-    daysInStock: number
-    purchasePrice: number
-  }[]
-}
-
-declare interface DashboardMetrics {
-  totalRevenue: number
-  revenueChange: number
-  activeCustomers: number
-  customersChange: number
-  totalPhones: number
-  phonesChange: number
-  profitRate: number
-  profitRateChange: number
-  recentSales: Sale[]
-  phoneStatusDistribution: {
-    status: PhoneStatus
-    count: number
-    percentage: number
-  }[]
-  revenueTrend: {
-    date: string
-    revenue: number
-    profit: number
-  }[]
 }

@@ -1,4 +1,9 @@
-import { LoginForm3 } from "./components/login-form-3"
+import { LoginForm3 } from "./components/login-form-3";
+
+export const metadata = {
+  title: "TechNova POS - Sign In",
+  description: "Sign in to your TechNova POS account",
+};
 
 export default function LoginPage() {
   return (
@@ -7,5 +12,5 @@ export default function LoginPage() {
         <LoginForm3 />
       </div>
     </div>
-  )
+  );
 }

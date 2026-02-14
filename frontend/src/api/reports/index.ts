@@ -3,38 +3,52 @@ import { REPORTS } from '@/api/path'
 
 export const reportsApi = baseApi.injectEndpoints({
   endpoints: (builder) => ({
-    getFinancialReport: builder.query<
-      FinancialReport,
-      ReportFilterParams | void
-    >({
+    getSalesReport: builder.query<SalesReport, ReportFilterParams | void>({
       query: (params) => ({
-        url: REPORTS.FINANCIAL,
+        url: REPORTS.SALES,
         method: 'GET',
         params: params || undefined,
       }),
       providesTags: ['REPORTS'],
     }),
 
-    getInventoryReport: builder.query<
-      InventoryReport,
+    getPurchasesReport: builder.query<
+      PurchasesReport,
       ReportFilterParams | void
     >({
       query: (params) => ({
-        url: REPORTS.INVENTORY,
+        url: REPORTS.PURCHASES,
         method: 'GET',
         params: params || undefined,
       }),
       providesTags: ['REPORTS'],
     }),
 
-    getDashboardMetrics: builder.query<
-      DashboardMetrics,
+    getRepairsReport: builder.query<RepairsReport, ReportFilterParams | void>({
+      query: (params) => ({
+        url: REPORTS.REPAIRS,
+        method: 'GET',
+        params: params || undefined,
+      }),
+      providesTags: ['REPORTS'],
+    }),
+
+    getFinancialSummary: builder.query<
+      FinancialSummary,
       ReportFilterParams | void
     >({
       query: (params) => ({
+        url: REPORTS.FINANCIAL_SUMMARY,
+        method: 'GET',
+        params: params || undefined,
+      }),
+      providesTags: ['REPORTS'],
+    }),
+
+    getDashboardStats: builder.query<DashboardStats, void>({
+      query: () => ({
         url: REPORTS.DASHBOARD,
         method: 'GET',
-        params: params || undefined,
       }),
       providesTags: ['REPORTS'],
     }),
@@ -42,7 +56,9 @@ export const reportsApi = baseApi.injectEndpoints({
 })
 
 export const {
-  useGetFinancialReportQuery,
-  useGetInventoryReportQuery,
-  useGetDashboardMetricsQuery,
+  useGetSalesReportQuery,
+  useGetPurchasesReportQuery,
+  useGetRepairsReportQuery,
+  useGetFinancialSummaryQuery,
+  useGetDashboardStatsQuery,
 } = reportsApi

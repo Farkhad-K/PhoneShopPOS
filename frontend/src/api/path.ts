@@ -59,7 +59,9 @@ export const PAYMENTS = {
 } as const
 
 export const REPORTS = {
-  FINANCIAL: '/api/reports/financial',
-  INVENTORY: '/api/reports/inventory',
+  SALES: '/api/reports/sales',
+  PURCHASES: '/api/reports/purchases',
+  REPAIRS: '/api/reports/repairs',
+  FINANCIAL_SUMMARY: '/api/reports/financial-summary',
   DASHBOARD: '/api/reports/dashboard',
 } as const

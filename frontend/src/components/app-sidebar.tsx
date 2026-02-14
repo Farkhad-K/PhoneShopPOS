@@ -3,19 +3,14 @@
 import * as React from "react";
 import { useAuth } from "@/hooks/use-auth";
 import {
-  LayoutPanelLeft,
   LayoutDashboard,
-  Mail,
-  CheckSquare,
-  MessageCircle,
-  Calendar,
-  Shield,
-  AlertTriangle,
-  Settings,
-  HelpCircle,
-  CreditCard,
-  LayoutTemplate,
   Users,
+  Smartphone,
+  ShoppingCart,
+  Wrench,
+  DollarSign,
+  UserCog,
+  BarChart,
 } from "lucide-react";
 import { Link } from "react-router-dom";
 import { Logo } from "@/components/logo";
@@ -40,169 +35,62 @@ const getDynamicData = (user: User | null) => ({
   },
   navGroups: [
     {
-      label: "Dashboards",
+      label: "Dashboard",
       items: [
         {
-          title: "Dashboard 1",
-          url: "/dashboard",
+          title: "POS Dashboard",
+          url: "/pos-dashboard",
           icon: LayoutDashboard,
-        },
-        {
-          title: "Dashboard 2",
-          url: "/dashboard-2",
-          icon: LayoutPanelLeft,
         },
       ],
     },
     {
-      label: "Apps",
+      label: "Inventory",
       items: [
         {
-          title: "Mail",
-          url: "/mail",
-          icon: Mail,
+          title: "Phones",
+          url: "/phones",
+          icon: Smartphone,
         },
         {
-          title: "Tasks",
-          url: "/tasks",
-          icon: CheckSquare,
+          title: "Purchases",
+          url: "/purchases",
+          icon: ShoppingCart,
         },
         {
-          title: "Chat",
-          url: "/chat",
-          icon: MessageCircle,
+          title: "Repairs",
+          url: "/repairs",
+          icon: Wrench,
+        },
+      ],
+    },
+    {
+      label: "Transactions",
+      items: [
+        {
+          title: "Sales",
+          url: "/sales",
+          icon: DollarSign,
         },
         {
-          title: "Calendar",
-          url: "/calendar",
-          icon: Calendar,
-        },
-        {
-          title: "Users",
-          url: "/users",
+          title: "Customers",
+          url: "/customers",
           icon: Users,
         },
       ],
     },
     {
-      label: "Pages",
+      label: "Management",
       items: [
         {
-          title: "Landing",
-          url: "/landing",
-          target: "_blank",
-          icon: LayoutTemplate,
+          title: "Workers",
+          url: "/workers",
+          icon: UserCog,
         },
         {
-          title: "Auth Pages",
-          url: "#",
-          icon: Shield,
-          items: [
-            {
-              title: "Sign In 1",
-              url: "/auth/sign-in",
-            },
-            {
-              title: "Sign In 2",
-              url: "/auth/sign-in-2",
-            },
-            {
-              title: "Sign In 3",
-              url: "/auth/sign-in-3",
-            },
-            {
-              title: "Sign Up 1",
-              url: "/auth/sign-up",
-            },
-            {
-              title: "Sign Up 2",
-              url: "/auth/sign-up-2",
-            },
-            {
-              title: "Sign Up 3",
-              url: "/auth/sign-up-3",
-            },
-            {
-              title: "Forgot Password 1",
-              url: "/auth/forgot-password",
-            },
-            {
-              title: "Forgot Password 2",
-              url: "/auth/forgot-password-2",
-            },
-            {
-              title: "Forgot Password 3",
-              url: "/auth/forgot-password-3",
-            },
-          ],
-        },
-        {
-          title: "Errors",
-          url: "#",
-          icon: AlertTriangle,
-          items: [
-            {
-              title: "Unauthorized",
-              url: "/errors/unauthorized",
-            },
-            {
-              title: "Forbidden",
-              url: "/errors/forbidden",
-            },
-            {
-              title: "Not Found",
-              url: "/errors/not-found",
-            },
-            {
-              title: "Internal Server Error",
-              url: "/errors/internal-server-error",
-            },
-            {
-              title: "Under Maintenance",
-              url: "/errors/under-maintenance",
-            },
-          ],
-        },
-        {
-          title: "Settings",
-          url: "#",
-          icon: Settings,
-          items: [
-            {
-              title: "User Settings",
-              url: "/settings/user",
-            },
-            {
-              title: "Account Settings",
-              url: "/settings/account",
-            },
-            {
-              title: "Plans & Billing",
-              url: "/settings/billing",
-            },
-            {
-              title: "Appearance",
-              url: "/settings/appearance",
-            },
-            {
-              title: "Notifications",
-              url: "/settings/notifications",
-            },
-            {
-              title: "Connections",
-              url: "/settings/connections",
-            },
-          ],
-        },
-        {
-          title: "FAQs",
-          url: "/faqs",
-          icon: HelpCircle,
-        },
-        {
-          title: "Pricing",
-          url: "/pricing",
-          icon: CreditCard,
+          title: "Reports",
+          url: "/reports/financial",
+          icon: BarChart,
         },
       ],
     },
@@ -219,13 +107,13 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
         <SidebarMenu>
           <SidebarMenuItem>
             <SidebarMenuButton size="lg" asChild>
-              <Link to="/dashboard">
+              <Link to="/pos-dashboard">
                 <div className="flex aspect-square size-8 items-center justify-center rounded-lg bg-primary text-primary-foreground">
                   <Logo size={24} className="text-current" />
                 </div>
                 <div className="grid flex-1 text-left text-sm leading-tight">
-                  <span className="truncate font-medium">POS Bakery</span>
-                  <span className="truncate text-xs">Admin Dashboard</span>
+                  <span className="truncate font-medium">TechNova</span>
+                  <span className="truncate text-xs">Phone Shop POS</span>
                 </div>
               </Link>
             </SidebarMenuButton>

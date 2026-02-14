@@ -4,7 +4,7 @@ import { StatusBadge } from '@/components/shared/status-badge'
 import { DataTable } from '@/components/shared/data-table'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { useGetDashboardMetricsQuery } from '@/api/reports'
+import { useGetDashboardStatsQuery } from '@/api/reports'
 import { useGetSalesQuery } from '@/api/sales'
 import { LoadingSpinner } from '@/components/ui/loading-spinner'
 import type { ColumnDef } from '@tanstack/react-table'
@@ -33,7 +33,7 @@ import { format } from 'date-fns'
 export default function PhoneShopDashboard() {
   const navigate = useNavigate()
 
-  const { data: metrics, isLoading: metricsLoading } = useGetDashboardMetricsQuery()
+  const { data: metrics, isLoading: metricsLoading } = useGetDashboardStatsQuery()
   const { data: salesData } = useGetSalesQuery({ page: 1, limit: 5 })
 
   const recentSales = salesData?.data || []
@@ -135,42 +135,42 @@ export default function PhoneShopDashboard() {
         </div>
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
           <MetricCard
-            title="Total Revenue"
+            title="Month Revenue"
             value={
-              metrics?.totalRevenue
+              metrics?.sales.monthRevenue
                 ? new Intl.NumberFormat('en-US', {
                     style: 'currency',
                     currency: 'UZS',
                     minimumFractionDigits: 0,
-                  }).format(metrics.totalRevenue)
+                  }).format(metrics.sales.monthRevenue)
                 : '0 UZS'
             }
-            change={metrics?.revenueChange}
             icon={DollarSign}
             iconClassName="text-green-600"
           />
           <MetricCard
-            title="Active Customers"
-            value={metrics?.activeCustomers || 0}
-            change={metrics?.customersChange}
+            title="Month Sales"
+            value={metrics?.sales.thisMonth || 0}
             icon={Users}
             iconClassName="text-blue-600"
           />
           <MetricCard
             title="Total Phones"
-            value={metrics?.totalPhones || 0}
-            change={metrics?.phonesChange}
+            value={metrics?.inventory.totalPhones || 0}
             icon={Smartphone}
             iconClassName="text-purple-600"
           />
           <MetricCard
-            title="Profit Rate"
+            title="Month Profit"
             value={
-              metrics?.profitRate
-                ? `${metrics.profitRate.toFixed(1)}%`
-                : '0%'
+              metrics?.financial.monthProfit
+                ? new Intl.NumberFormat('en-US', {
+                    style: 'currency',
+                    currency: 'UZS',
+                    minimumFractionDigits: 0,
+                  }).format(metrics.financial.monthProfit)
+                : '0 UZS'
             }
-            change={metrics?.profitRateChange}
             icon={TrendingUp}
             iconClassName="text-orange-600"
           />
@@ -179,104 +179,67 @@ export default function PhoneShopDashboard() {
         <div className="grid gap-4 md:grid-cols-2">
           <Card>
             <CardHeader>
-              <CardTitle>Revenue Trend</CardTitle>
+              <CardTitle>Inventory Status</CardTitle>
             </CardHeader>
             <CardContent>
-              <ResponsiveContainer width="100%" height={300}>
-                <AreaChart data={metrics?.revenueTrend || []}>
-                  <defs>
-                    <linearGradient
-                      id="colorRevenue"
-                      x1="0"
-                      y1="0"
-                      x2="0"
-                      y2="1"
-                    >
-                      <stop
-                        offset="5%"
-                        stopColor="#3b82f6"
-                        stopOpacity={0.8}
-                      />
-                      <stop
-                        offset="95%"
-                        stopColor="#3b82f6"
-                        stopOpacity={0}
-                      />
-                    </linearGradient>
-                    <linearGradient
-                      id="colorProfit"
-                      x1="0"
-                      y1="0"
-                      x2="0"
-                      y2="1"
-                    >
-                      <stop
-                        offset="5%"
-                        stopColor="#22c55e"
-                        stopOpacity={0.8}
-                      />
-                      <stop
-                        offset="95%"
-                        stopColor="#22c55e"
-                        stopOpacity={0}
-                      />
-                    </linearGradient>
-                  </defs>
-                  <XAxis
-                    dataKey="date"
-                    tickFormatter={(value) =>
-                      format(new Date(value), 'MMM dd')
-                    }
-                  />
-                  <YAxis />
-                  <Tooltip />
-                  <Area
-                    type="monotone"
-                    dataKey="revenue"
-                    stroke="#3b82f6"
-                    fillOpacity={1}
-                    fill="url(#colorRevenue)"
-                  />
-                  <Area
-                    type="monotone"
-                    dataKey="profit"
-                    stroke="#22c55e"
-                    fillOpacity={1}
-                    fill="url(#colorProfit)"
-                  />
-                </AreaChart>
-              </ResponsiveContainer>
+              <div className="space-y-4">
+                <div className="flex justify-between items-center">
+                  <span>In Stock</span>
+                  <span className="font-bold">{metrics?.inventory.inStock || 0}</span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span>Ready for Sale</span>
+                  <span className="font-bold">{metrics?.inventory.readyForSale || 0}</span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span>In Repair</span>
+                  <span className="font-bold text-orange-600">{metrics?.inventory.inRepair || 0}</span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span>Sold</span>
+                  <span className="font-bold text-green-600">{metrics?.inventory.sold || 0}</span>
+                </div>
+                <div className="flex justify-between items-center border-t pt-4">
+                  <span className="font-semibold">Available</span>
+                  <span className="font-bold text-blue-600">{metrics?.inventory.available || 0}</span>
+                </div>
+              </div>
             </CardContent>
           </Card>
 
           <Card>
             <CardHeader>
-              <CardTitle>Phone Status Distribution</CardTitle>
+              <CardTitle>Sales & Repairs</CardTitle>
             </CardHeader>
             <CardContent>
-              <ResponsiveContainer width="100%" height={300}>
-                <PieChart>
-                  <Pie
-                    data={metrics?.phoneStatusDistribution || []}
-                    dataKey="count"
-                    nameKey="status"
-                    cx="50%"
-                    cy="50%"
-                    outerRadius={80}
-                    label={(entry) => `${entry.status}: ${entry.percentage}%`}
-                  >
-                    {(metrics?.phoneStatusDistribution || []).map(
-                      (entry, index) => (
-                        <Cell
-                          key={`cell-${index}`}
-                          fill={PHONE_STATUS_COLORS[entry.status]}
-                        />
-                      )
-                    )}
-                  </Pie>
-                  <Tooltip />
-                </PieChart>
-              </ResponsiveContainer>
+              <div className="space-y-4">
+                <div>
+                  <div className="text-sm text-muted-foreground mb-2">Sales</div>
+                  <div className="flex justify-between items-center">
+                    <span>Today</span>
+                    <span className="font-bold">{metrics?.sales.today || 0}</span>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span>This Week</span>
+                    <span className="font-bold">{metrics?.sales.thisWeek || 0}</span>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span>This Month</span>
+                    <span className="font-bold">{metrics?.sales.thisMonth || 0}</span>
+                  </div>
+                </div>
+                <div className="border-t pt-4">
+                  <div className="text-sm text-muted-foreground mb-2">Repairs</div>
+                  <div className="flex justify-between items-center">
+                    <span>Pending</span>
+                    <span className="font-bold text-orange-600">{metrics?.repairs.pending || 0}</span>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span>In Progress</span>
+                    <span className="font-bold text-blue-600">{metrics?.repairs.inProgress || 0}</span>
+                  </div>
+                </div>
+              </div>
             </CardContent>
           </Card>
         </div>
