@@ -5,21 +5,16 @@ import { useNavigate } from "react-router-dom"
 import { Command as CommandPrimitive } from "cmdk"
 import {
   Search,
-  LayoutPanelLeft,
   LayoutDashboard,
-  Mail,
-  CheckSquare,
-  MessageCircle,
-  Calendar,
-  Shield,
-  AlertTriangle,
-  Settings,
-  HelpCircle,
-  CreditCard,
-  User,
-  Bell,
-  Link2,
-  Palette,
+  Smartphone,
+  ShoppingCart,
+  Wrench,
+  Receipt,
+  Users,
+  UserPlus,
+  HardDrive,
+  BarChart3,
+  Package,
   type LucideIcon,
 } from "lucide-react"
 
@@ -127,42 +122,29 @@ export function CommandSearch({ open, onOpenChange }: CommandSearchProps) {
   const commandRef = React.useRef<HTMLDivElement>(null)
 
   const searchItems: SearchItem[] = [
-    // Dashboards
-    { title: "Dashboard 1", url: "/dashboard", group: "Dashboards", icon: LayoutDashboard },
-    { title: "Dashboard 2", url: "/dashboard-2", group: "Dashboards", icon: LayoutPanelLeft },
+    // Quick Navigation
+    { title: "POS Dashboard", url: "/pos-dashboard", group: "Quick Navigation", icon: LayoutDashboard },
 
-    // Apps
-    { title: "Mail", url: "/mail", group: "Apps", icon: Mail },
-    { title: "Tasks", url: "/tasks", group: "Apps", icon: CheckSquare },
-    { title: "Chat", url: "/chat", group: "Apps", icon: MessageCircle },
-    { title: "Calendar", url: "/calendar", group: "Apps", icon: Calendar },
+    // Products / Phones
+    { title: "Phone Inventory", url: "/phones", group: "Products", icon: Smartphone },
+    { title: "New Purchase", url: "/purchases/new", group: "Products", icon: ShoppingCart },
+    { title: "All Purchases", url: "/purchases", group: "Products", icon: Package },
 
-    // Auth Pages
-    { title: "Sign In 1", url: "/auth/sign-in", group: "Auth Pages", icon: Shield },
-    { title: "Sign In 2", url: "/auth/sign-in-2", group: "Auth Pages", icon: Shield },
-    { title: "Sign Up 1", url: "/auth/sign-up", group: "Auth Pages", icon: Shield },
-    { title: "Sign Up 2", url: "/auth/sign-up-2", group: "Auth Pages", icon: Shield },
-    { title: "Forgot Password 1", url: "/auth/forgot-password", group: "Auth Pages", icon: Shield },
-    { title: "Forgot Password 2", url: "/auth/forgot-password-2", group: "Auth Pages", icon: Shield },
+    // Repairs
+    { title: "All Repairs", url: "/repairs", group: "Repairs", icon: Wrench },
+    { title: "New Repair", url: "/repairs/new", group: "Repairs", icon: HardDrive },
 
-    // Errors
-    { title: "Unauthorized", url: "/errors/unauthorized", group: "Errors", icon: AlertTriangle },
-    { title: "Forbidden", url: "/errors/forbidden", group: "Errors", icon: AlertTriangle },
-    { title: "Not Found", url: "/errors/not-found", group: "Errors", icon: AlertTriangle },
-    { title: "Internal Server Error", url: "/errors/internal-server-error", group: "Errors", icon: AlertTriangle },
-    { title: "Under Maintenance", url: "/errors/under-maintenance", group: "Errors", icon: AlertTriangle },
+    // Sales
+    { title: "All Sales", url: "/sales", group: "Sales", icon: Receipt },
+    { title: "New Sale", url: "/sales/new", group: "Sales", icon: ShoppingCart },
 
-    // Settings
-    { title: "User Settings", url: "/settings/user", group: "Settings", icon: User },
-    { title: "Account Settings", url: "/settings/account", group: "Settings", icon: Settings },
-    { title: "Plans & Billing", url: "/settings/billing", group: "Settings", icon: CreditCard },
-    { title: "Appearance", url: "/settings/appearance", group: "Settings", icon: Palette },
-    { title: "Notifications", url: "/settings/notifications", group: "Settings", icon: Bell },
-    { title: "Connections", url: "/settings/connections", group: "Settings", icon: Link2 },
+    // Customers
+    { title: "All Customers", url: "/customers", group: "Customers", icon: Users },
+    { title: "New Customer", url: "/customers/new", group: "Customers", icon: UserPlus },
 
-    // Pages
-    { title: "FAQs", url: "/faqs", group: "Pages", icon: HelpCircle },
-    { title: "Pricing", url: "/pricing", group: "Pages", icon: CreditCard },
+    // Reports
+    { title: "Financial Report", url: "/reports/financial", group: "Reports", icon: BarChart3 },
+    { title: "Inventory Report", url: "/reports/inventory", group: "Reports", icon: Package },
   ]
 
   const groupedItems = searchItems.reduce((acc, item) => {
@@ -195,7 +177,7 @@ export function CommandSearch({ open, onOpenChange }: CommandSearchProps) {
           ref={commandRef}
           className="transition-transform duration-100 ease-out"
         >
-          <CommandInput placeholder="What do you need?" autoFocus />
+          <CommandInput placeholder="Search phones, customers, sales..." autoFocus />
           <CommandList>
             <CommandEmpty>No results found.</CommandEmpty>
             {Object.entries(groupedItems).map(([group, items]) => (
