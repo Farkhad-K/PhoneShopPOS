@@ -1,4 +1,4 @@
-import { BaseLayout } from '@/components/layouts/base-layout'
+import { PageHeader } from '@/components/shared/page-header'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import {
@@ -78,7 +78,8 @@ export default function NewRepairPage() {
   }
 
   return (
-    <BaseLayout title="New Repair" description="Create a new repair record">
+    <>
+      <PageHeader title="New Repair" description="Create a new repair record" />
       <div className="p-6">
         <div className="flex justify-end mb-4">
           <Button variant="outline" onClick={() => navigate('/repairs')}>
@@ -287,6 +288,6 @@ export default function NewRepairPage() {
           </form>
         </Form>
       </div>
-    </BaseLayout>
+    </>
   )
 }

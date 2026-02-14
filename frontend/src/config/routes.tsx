@@ -1,11 +1,10 @@
 import { lazy } from 'react'
 import { Navigate } from 'react-router-dom'
 import { ProtectedRoute } from '@/components/router/protected-route'
+import { RoleGuard } from '@/components/router/protected-route'
+import { DashboardLayout } from '@/components/layouts/dashboard-layout'
 
-// Lazy load components for code splitting and better performance
-// Loading animation will show naturally when chunks are being loaded
-
-// Auth pages - Only sign-in-3 is used
+// Auth pages
 const SignIn3 = lazy(() => import('@/app/auth/sign-in-3/page'))
 
 // Phone Shop POS pages
@@ -31,18 +30,11 @@ export interface RouteConfig {
   path: string
   element: React.ReactNode
   children?: RouteConfig[]
-  requireAuth?: boolean
-  allowedRoles?: UserRole[]
+  index?: boolean
 }
 
 export const routes: RouteConfig[] = [
-  // Root redirects to login
-  {
-    path: "/",
-    element: <Navigate to="/auth/sign-in-3" replace />
-  },
-
-  // Authentication - Primary login page
+  // Authentication
   {
     path: "/auth/sign-in-3",
     element: (
@@ -52,156 +44,134 @@ export const routes: RouteConfig[] = [
     )
   },
 
-  // Phone Shop POS Dashboard
+  // Dashboard layout route (all authenticated pages)
   {
-    path: "/pos-dashboard",
-    element: (
-      <ProtectedRoute>
-        <PhoneShopDashboard />
-      </ProtectedRoute>
-    )
-  },
+    path: "/",
+    element: <DashboardLayout />,
+    children: [
+      // Index redirects to dashboard
+      {
+        path: "",
+        index: true,
+        element: <Navigate to="/pos-dashboard" replace />
+      },
 
-  // Phone Inventory Routes
-  {
-    path: "/phones",
-    element: (
-      <ProtectedRoute>
-        <PhonesList />
-      </ProtectedRoute>
-    )
-  },
-  {
-    path: "/phones/:id",
-    element: (
-      <ProtectedRoute>
-        <PhoneDetail />
-      </ProtectedRoute>
-    )
-  },
+      // POS Dashboard
+      {
+        path: "pos-dashboard",
+        element: <PhoneShopDashboard />
+      },
 
-  // Purchase Routes
-  {
-    path: "/purchases",
-    element: (
-      <ProtectedRoute>
-        <PurchasesList />
-      </ProtectedRoute>
-    )
-  },
-  {
-    path: "/purchases/new",
-    element: (
-      <ProtectedRoute allowedRoles={['OWNER', 'MANAGER']}>
-        <NewPurchase />
-      </ProtectedRoute>
-    )
-  },
+      // Phone Inventory
+      {
+        path: "phones",
+        element: <PhonesList />
+      },
+      {
+        path: "phones/:id",
+        element: <PhoneDetail />
+      },
 
-  // Repair Routes
-  {
-    path: "/repairs",
-    element: (
-      <ProtectedRoute>
-        <RepairsList />
-      </ProtectedRoute>
-    )
-  },
-  {
-    path: "/repairs/new",
-    element: (
-      <ProtectedRoute allowedRoles={['OWNER', 'MANAGER', 'TECHNICIAN']}>
-        <NewRepair />
-      </ProtectedRoute>
-    )
-  },
+      // Purchases
+      {
+        path: "purchases",
+        element: <PurchasesList />
+      },
+      {
+        path: "purchases/new",
+        element: (
+          <RoleGuard allowedRoles={['OWNER', 'MANAGER']}>
+            <NewPurchase />
+          </RoleGuard>
+        )
+      },
 
-  // Sale Routes
-  {
-    path: "/sales",
-    element: (
-      <ProtectedRoute>
-        <SalesList />
-      </ProtectedRoute>
-    )
-  },
-  {
-    path: "/sales/new",
-    element: (
-      <ProtectedRoute allowedRoles={['OWNER', 'MANAGER', 'CASHIER']}>
-        <NewSale />
-      </ProtectedRoute>
-    )
-  },
+      // Repairs
+      {
+        path: "repairs",
+        element: <RepairsList />
+      },
+      {
+        path: "repairs/new",
+        element: (
+          <RoleGuard allowedRoles={['OWNER', 'MANAGER', 'TECHNICIAN']}>
+            <NewRepair />
+          </RoleGuard>
+        )
+      },
 
-  // Customer Routes
-  {
-    path: "/customers",
-    element: (
-      <ProtectedRoute>
-        <CustomersList />
-      </ProtectedRoute>
-    )
-  },
-  {
-    path: "/customers/:id",
-    element: (
-      <ProtectedRoute>
-        <CustomerDetail />
-      </ProtectedRoute>
-    )
-  },
-  {
-    path: "/customers/new",
-    element: (
-      <ProtectedRoute>
-        <NewCustomer />
-      </ProtectedRoute>
-    )
-  },
+      // Sales
+      {
+        path: "sales",
+        element: <SalesList />
+      },
+      {
+        path: "sales/new",
+        element: (
+          <RoleGuard allowedRoles={['OWNER', 'MANAGER', 'CASHIER']}>
+            <NewSale />
+          </RoleGuard>
+        )
+      },
 
-  // Worker Routes (OWNER, MANAGER only)
-  {
-    path: "/workers",
-    element: (
-      <ProtectedRoute allowedRoles={['OWNER', 'MANAGER']}>
-        <WorkersList />
-      </ProtectedRoute>
-    )
-  },
-  {
-    path: "/workers/:id",
-    element: (
-      <ProtectedRoute allowedRoles={['OWNER', 'MANAGER']}>
-        <WorkerDetail />
-      </ProtectedRoute>
-    )
-  },
-  {
-    path: "/workers/new",
-    element: (
-      <ProtectedRoute allowedRoles={['OWNER', 'MANAGER']}>
-        <NewWorker />
-      </ProtectedRoute>
-    )
-  },
+      // Customers
+      {
+        path: "customers",
+        element: <CustomersList />
+      },
+      {
+        path: "customers/:id",
+        element: <CustomerDetail />
+      },
+      {
+        path: "customers/new",
+        element: <NewCustomer />
+      },
 
-  // Reports Routes (OWNER, MANAGER only)
-  {
-    path: "/reports/financial",
-    element: (
-      <ProtectedRoute allowedRoles={['OWNER', 'MANAGER']}>
-        <FinancialReport />
-      </ProtectedRoute>
-    )
-  },
-  {
-    path: "/reports/inventory",
-    element: (
-      <ProtectedRoute allowedRoles={['OWNER', 'MANAGER']}>
-        <InventoryReport />
-      </ProtectedRoute>
-    )
+      // Workers (OWNER, MANAGER only)
+      {
+        path: "workers",
+        element: (
+          <RoleGuard allowedRoles={['OWNER', 'MANAGER']}>
+            <WorkersList />
+          </RoleGuard>
+        )
+      },
+      {
+        path: "workers/:id",
+        element: (
+          <RoleGuard allowedRoles={['OWNER', 'MANAGER']}>
+            <WorkerDetail />
+          </RoleGuard>
+        )
+      },
+      {
+        path: "workers/new",
+        element: (
+          <RoleGuard allowedRoles={['OWNER', 'MANAGER']}>
+            <NewWorker />
+          </RoleGuard>
+        )
+      },
+
+      // Reports (OWNER, MANAGER only)
+      {
+        path: "reports/financial",
+        element: (
+          <RoleGuard allowedRoles={['OWNER', 'MANAGER']}>
+            <FinancialReport />
+          </RoleGuard>
+        )
+      },
+      {
+        path: "reports/inventory",
+        element: (
+          <RoleGuard allowedRoles={['OWNER', 'MANAGER']}>
+            <InventoryReport />
+          </RoleGuard>
+        )
+      },
+    ]
   },
 
   // Catch-all route for 404

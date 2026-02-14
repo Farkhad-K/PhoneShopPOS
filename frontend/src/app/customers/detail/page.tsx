@@ -1,4 +1,4 @@
-import { BaseLayout } from '@/components/layouts/base-layout'
+import { PageHeader } from '@/components/shared/page-header'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import {
@@ -82,34 +82,34 @@ export default function CustomerDetailPage() {
 
   if (isLoading) {
     return (
-      <BaseLayout title="Customer Details" description="Loading...">
+      <>
+        <PageHeader title="Customer Details" description="Loading..." />
         <div className="flex items-center justify-center h-96">
           <LoadingSpinner />
         </div>
-      </BaseLayout>
+      </>
     )
   }
 
   if (!customer) {
     return (
-      <BaseLayout title="Customer Not Found" description="Customer not found">
+      <>
+        <PageHeader title="Customer Not Found" description="Customer not found" />
         <div className="text-center p-8">
           <p className="text-muted-foreground">Customer not found</p>
           <Button onClick={() => navigate('/customers')} className="mt-4">
             Back to Customers
           </Button>
         </div>
-      </BaseLayout>
+      </>
     )
   }
 
   const totalDebt = balance?.totalDebt || 0
 
   return (
-    <BaseLayout
-      title={customer.fullName}
-      description={customer.phoneNumber}
-    >
+    <>
+      <PageHeader title={customer.fullName} description={customer.phoneNumber} />
       <div className="space-y-6 p-6">
         <div className="flex justify-end">
           <Button variant="outline" onClick={() => navigate('/customers')}>
@@ -380,6 +380,6 @@ export default function CustomerDetailPage() {
           </Card>
         )}
       </div>
-    </BaseLayout>
+    </>
   )
 }

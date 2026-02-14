@@ -1,4 +1,4 @@
-import { BaseLayout } from '@/components/layouts/base-layout'
+import { PageHeader } from '@/components/shared/page-header'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import {
@@ -189,29 +189,32 @@ export default function WorkerDetailPage() {
 
   if (isLoading) {
     return (
-      <BaseLayout title="Worker Details" description="Loading...">
+      <>
+        <PageHeader title="Worker Details" description="Loading..." />
         <div className="flex items-center justify-center h-96">
           <LoadingSpinner />
         </div>
-      </BaseLayout>
+      </>
     )
   }
 
   if (!worker) {
     return (
-      <BaseLayout title="Worker Not Found" description="Worker not found">
+      <>
+        <PageHeader title="Worker Not Found" description="Worker not found" />
         <div className="text-center p-8">
           <p className="text-muted-foreground">Worker not found</p>
           <Button onClick={() => navigate('/workers')} className="mt-4">
             Back to Workers
           </Button>
         </div>
-      </BaseLayout>
+      </>
     )
   }
 
   return (
-    <BaseLayout title={worker.fullName} description={worker.phoneNumber}>
+    <>
+      <PageHeader title={worker.fullName} description={worker.phoneNumber} />
       <div className="space-y-6 p-6">
         <div className="flex justify-end">
           <Button variant="outline" onClick={() => navigate('/workers')}>
@@ -468,6 +471,6 @@ export default function WorkerDetailPage() {
           </CardContent>
         </Card>
       </div>
-    </BaseLayout>
+    </>
   )
 }

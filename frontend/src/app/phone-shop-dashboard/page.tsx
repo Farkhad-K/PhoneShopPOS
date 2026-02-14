@@ -1,4 +1,4 @@
-import { BaseLayout } from '@/components/layouts/base-layout'
+import { PageHeader } from '@/components/shared/page-header'
 import { MetricCard } from '@/components/shared/metric-card'
 import { StatusBadge } from '@/components/shared/status-badge'
 import { DataTable } from '@/components/shared/data-table'
@@ -109,19 +109,18 @@ export default function PhoneShopDashboard() {
 
   if (metricsLoading) {
     return (
-      <BaseLayout title="Dashboard" description="Phone Shop POS Dashboard">
+      <>
+        <PageHeader title="Dashboard" description="Phone Shop POS Dashboard" />
         <div className="flex items-center justify-center h-96">
           <LoadingSpinner />
         </div>
-      </BaseLayout>
+      </>
     )
   }
 
   return (
-    <BaseLayout
-      title="Dashboard"
-      description="Phone Shop POS Dashboard"
-    >
+    <>
+      <PageHeader title="Dashboard" description="Phone Shop POS Dashboard" />
       <div className="space-y-6 p-6">
         <div className="flex gap-2 justify-end">
           <Button onClick={() => navigate('/purchases/new')}>
@@ -257,6 +256,6 @@ export default function PhoneShopDashboard() {
           </CardContent>
         </Card>
       </div>
-    </BaseLayout>
+    </>
   )
 }

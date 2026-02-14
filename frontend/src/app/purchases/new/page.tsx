@@ -1,4 +1,4 @@
-import { BaseLayout } from '@/components/layouts/base-layout'
+import { PageHeader } from '@/components/shared/page-header'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import {
@@ -120,10 +120,8 @@ export default function NewPurchasePage() {
   }
 
   return (
-    <BaseLayout
-      title="New Purchase"
-      description="Add new phones to inventory"
-    >
+    <>
+      <PageHeader title="New Purchase" description="Add new phones to inventory" />
       <div className="p-6">
         <div className="flex justify-end mb-4">
           <Button variant="outline" onClick={() => navigate('/purchases')}>
@@ -495,6 +493,6 @@ export default function NewPurchasePage() {
           </form>
         </Form>
       </div>
-    </BaseLayout>
+    </>
   )
 }

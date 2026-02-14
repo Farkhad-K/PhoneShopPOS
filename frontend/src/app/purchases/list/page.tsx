@@ -1,4 +1,4 @@
-import { BaseLayout } from '@/components/layouts/base-layout'
+import { PageHeader } from '@/components/shared/page-header'
 import { DataTable } from '@/components/shared/data-table'
 import { StatusBadge } from '@/components/shared/status-badge'
 import { Button } from '@/components/ui/button'
@@ -101,19 +101,18 @@ export default function PurchasesListPage() {
 
   if (isLoading) {
     return (
-      <BaseLayout title="Purchases" description="Manage phone purchases">
+      <>
+        <PageHeader title="Purchases" description="Manage phone purchases" />
         <div className="flex items-center justify-center h-96">
           <LoadingSpinner />
         </div>
-      </BaseLayout>
+      </>
     )
   }
 
   return (
-    <BaseLayout
-      title="Purchases"
-      description={`Total: ${purchases.length} purchases`}
-    >
+    <>
+      <PageHeader title="Purchases" description={`Total: ${purchases.length} purchases`} />
       <div className="space-y-4 p-6">
         <div className="flex gap-4 justify-between items-center">
           <div className="relative flex-1 max-w-sm">
@@ -137,6 +136,6 @@ export default function PurchasesListPage() {
           onRowClick={(purchase) => navigate(`/purchases/${purchase.id}`)}
         />
       </div>
-    </BaseLayout>
+    </>
   )
 }
