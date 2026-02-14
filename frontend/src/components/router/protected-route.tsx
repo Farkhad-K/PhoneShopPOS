@@ -6,7 +6,7 @@ import { useEffect, useState } from 'react'
 interface ProtectedRouteProps {
   children: React.ReactNode
   requireAuth?: boolean
-  allowedRoles?: ('ADMIN' | 'WORKER')[]
+  allowedRoles?: UserRole[]
 }
 
 export function ProtectedRoute({
@@ -33,19 +33,26 @@ export function ProtectedRoute({
 
   // If route requires authentication and user is not authenticated
   if (requireAuth && !isAuthenticated) {
-    return <Navigate to="/auth/sign-in" state={{ from: location }} replace />
+    return <Navigate to="/auth/sign-in-3" state={{ from: location }} replace />
   }
 
   // If route has role restrictions
   if (requireAuth && allowedRoles && user) {
     if (!allowedRoles.includes(user.role)) {
-      return <Navigate to="/errors/forbidden" replace />
+      return (
+        <div className="flex min-h-screen items-center justify-center">
+          <div className="text-center">
+            <h1 className="text-4xl font-bold">403</h1>
+            <p className="text-muted-foreground mt-2">Access forbidden</p>
+          </div>
+        </div>
+      )
     }
   }
 
-  // If user is authenticated and tries to access auth pages, redirect to dashboard
+  // If user is authenticated and tries to access auth pages, redirect to POS dashboard
   if (!requireAuth && isAuthenticated) {
-    return <Navigate to="/dashboard" replace />
+    return <Navigate to="/pos-dashboard" replace />
   }
 
   return <>{children}</>

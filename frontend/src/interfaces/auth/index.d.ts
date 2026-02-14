@@ -12,7 +12,9 @@ declare interface RefreshTokenRequest {
 declare interface User {
   id: number
   username: string
-  role: 'ADMIN' | 'WORKER'
+  role: UserRole
+  fullName?: string
+  email?: string
   createdAt: string
   updatedAt: string
 }
@@ -29,4 +31,18 @@ declare interface AuthResponse {
 
 declare interface LogoutResponse {
   message: string
+}
+
+declare interface CreateUserRequest {
+  username: string
+  password: string
+  role: UserRole
+  fullName?: string
+  email?: string
+}
+
+declare interface UpdateUserRequest {
+  fullName?: string
+  email?: string
+  password?: string
 }
